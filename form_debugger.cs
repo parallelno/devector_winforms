@@ -13,7 +13,7 @@ namespace devector
 {
 	public partial class form_debugger : Form
 	{
-		readonly UInt16 BEFORE_ADDR_LINES = 6;
+        const UInt16 BEFORE_ADDR_LINES = 6;
 
 		public form_debugger()
 		{
@@ -135,7 +135,7 @@ namespace devector
             var pf = Hardware.cpu.flag_p ? 1 : 0;
             var sf = Hardware.cpu.flag_s ? 1 : 0;
             var acf = Hardware.cpu.flag_ac ? 1 : 0;
-            var iff = Hardware.cpu.iff ? 1 : 0;
+            var iff = Hardware.cpu.INTE ? 1 : 0;
 
             textbox_cf.Text = $"{cf}";
             textbox_zf.Text = $"{zf}";
@@ -203,7 +203,7 @@ namespace devector
 
         private void toolStripButton1_Click(object sender, EventArgs e)
         {
-			Hardware.step();
+			Hardware.execute_instruction();
             update_form();
         }
 
@@ -211,7 +211,7 @@ namespace devector
         {
 			for (int i = 0; i < 256; i++)
 			{
-                Hardware.step();
+                Hardware.execute_instruction();
             }
             update_form();
         }

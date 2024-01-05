@@ -13,21 +13,21 @@ namespace devector
 		public static I8080 cpu;
 		public static Memory memory;
 		public static IO io;
-		public static Display video;
-        public static Debugger debugger;
+		public static Display display;
+		public static Debugger debugger;
 
 		public Hardware() {
-            memory = new Memory();
+			memory = new Memory();
 			io = new IO(memory);
-            cpu = new I8080(memory.get_byte, memory.set_byte, io.port_in, io.port_out);
-			video = new Display(memory);
+			cpu = new I8080(memory.get_byte, memory.set_byte, io.port_in, io.port_out);
+			display = new Display(memory);
 
-            debugger = new Debugger(memory);
-        }
+			debugger = new Debugger(memory);
+		}
 
 		public void load_rom(string path)
 		{
-            byte[] file_data = null;
+			byte[] file_data = null;
 
 			try
 			{
@@ -50,20 +50,26 @@ namespace devector
 		{
 			memory.init();
 			cpu.init();
-		}
-
-        // executes one instruction
-        public static void step()
-        {
-            debugger.step();
-            cpu.step();
         }
 
-        // called by the timer 50 times per second
-        // it generates the frame texture and triggers the interruption
-        public void execute_frame()
-        {
-			video.reset();
+        // rasterizes the frame. it's called by the 50 Hz times
+        public static void execute_frame()
+		{
+			// per pixel loop
+			for (int pxl_idx = 0; pxl_idx < Display.FRAME_CC; pxl_idx++)
+			{
+				display.rasterize();
+                cpu.execute_machine_cycle(display.INT);
+            }
         }
-    }
+
+		public static void execute_instruction()
+		{
+            do
+			{
+                display.rasterize();
+                cpu.execute_machine_cycle(display.INT);
+            } while (cpu.machine_cycle == I8080.INSTR_EXECUTED);
+        }
+	}
 }

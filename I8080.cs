@@ -1,37 +1,66 @@
-﻿using System;
+﻿// Intel 8080 (KR580VM80A) microprocessor core model
+//
+// credints
+// https://github.com/superzazu/8080/blob/master/i8080.c
+// https://github.com/amensch/e8080/blob/master/e8080/Intel8080/i8080.cs
+// https://github.com/svofski/vector06sdl/blob/master/src/i8080.cpp
+
+// Vector06 cpu timings:
+// every Vector06c instruction consists of one to six machine cycles
+// every Vector06c machine cycle consists of four active states aften called t-states (T1, T2, etc)
+// each t-state triggered by 3 Mhz clock clock
+
+using System;
+using System.CodeDom.Compiler;
+using System.Net.Sockets;
 using System.Reflection.Emit;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Windows.Forms;
 using System.Xml.Linq;
+using static devector.Memory;
+using static System.Windows.Forms.AxHost;
 
 namespace devector
 {
 	public class I8080
 	{
-		public UInt64 cc; // clock cycles
+		private delegate void InstructionAction(); // each instruction action has to handle all the machine cycles for each instruction. when the execution finished, the output is INSTR_EXECUTED
+		private static InstructionAction[] actions = new InstructionAction[0x100];
+
+		public UInt64 cc; // clock cycles. it's the debug related data
 		public UInt16 pc, sp; // program counter, stack pointer
 		public byte a, b, c, d, e, h, l; // registers
+		public byte instruction_register; // an internal register that stores the fetched instruction
 
-		// flags:
-		public bool flag_s;		// sign
-		public bool flag_z;		// zero
-		public bool flag_ac;	// auxiliary carry (half-carry)
-		public bool flag_p;		// parity
-		public bool flag_c;		// carry
+		// Arithmetic and Logic Unit (ALU)
+		public byte TMP;    // an 8-bit temporary register
+		public byte ACT;    // an 8-bit temporary accumulator
+		public byte W;		// an 8-bit temporary hi addr
+		public byte Z;		// an 8-bit temporary low addr
+		public bool flag_s;	// sign
+		public bool flag_z;	// zero
+		public bool flag_ac;// auxiliary carry (half-carry)
+		public bool flag_p;	// parity
+		public bool flag_c;	// carry
 		public bool unused_flaf_1; // unused, always 1 in Vector06c
 		public bool unused_flaf_3; // unused, always 0 in Vector06c
 		public bool unused_flaf_5; // unused, always 0 in Vector06c
 
+		public int machine_cycle; // a machine cycle index of the currently executed instruction
+		const UInt64 MACHINE_CC = 4; // a number of clock cycles one machine cycle takes
+		public const int INSTR_EXECUTED = 0; // machine_cycle index indicating the instruction executon is over
+
 		// interruption
-		public bool iff; // iterrupt flip-flop
+		public bool INTE; // set if an iterrupt enabled
 		public bool HLTA; // indicates that HLT instruction is executed
-		public byte int_pending_instructions; // a number of instructions to execute before an interruption call
-		static byte OPCODE_RST7 = 0xff;
+		public bool ei_pending; // if set, the interruption call is pending until the next instruction
+		const byte OPCODE_RST7 = 0xff;
 
 		// memory + io interface
-		public delegate byte MemoryReadDelegate(int address, bool addr_space_global = false);
-		public delegate void MemoryWriteDelegate(int address, byte value, bool addr_space_global = false);
+		public delegate byte MemoryReadDelegate(int addr, Memory.Access acess = Memory.Access.RAM);
+		public delegate void MemoryWriteDelegate(int addr, byte value, Access acess = Memory.Access.RAM);
+
 		public delegate byte InputDelegate(byte port);
 		public delegate void OutputDelegate(byte port, byte value);
 
@@ -61,48 +90,73 @@ namespace devector
 		public void init()
 		{
 			cc = pc = sp = 0;
-			a = b = c = d = e = h = l = 0;
-			flag_s = flag_z = flag_ac = flag_p = flag_c = iff = false;
+			a = b = c = d = e = h = l = instruction_register = TMP = ACT = W = Z = 0;
+			flag_s = flag_z = flag_ac = flag_p = flag_c = INTE = false;
+
+			machine_cycle = 0;
 
 			HLTA = false;
-			int_pending_instructions = 0;
-		}
-		// executes one instruction
-		public void step() {
-			// interrupt processing: if an interrupt is pending and IFF is set,
-			// we execute the interrupt vector passed by the user.
-			if (iff && int_pending_instructions == 0)
-			{
-				iff = false;
-				HLTA = false;
-				execute(OPCODE_RST7);
-			}
-			else if (!HLTA)
-			{
-				execute(read_byte_move_pc());
-			}
+			ei_pending = false;
+
+			incode_actions();
 		}
 
-		// this array defines the number of cycles one opcode takes.
-		// TODO: this is for i8080. Update it to match Vector06c instruction cc table
-		static readonly byte[] I8080_OPCODES_CYCLES = new byte[] {
-			//  0  1   2   3   4   5   6   7   8  9   A   B   C   D   E  F
-			4, 10, 7,  5,  5,  5,  7,  4,  4, 10, 7,  5,  5,  5,  7, 4,  // 0
-			4, 10, 7,  5,  5,  5,  7,  4,  4, 10, 7,  5,  5,  5,  7, 4,  // 1
-			4, 10, 16, 5,  5,  5,  7,  4,  4, 10, 16, 5,  5,  5,  7, 4,  // 2
-			4, 10, 13, 5,  10, 10, 10, 4,  4, 10, 13, 5,  5,  5,  7, 4,  // 3
-			5, 5,  5,  5,  5,  5,  7,  5,  5, 5,  5,  5,  5,  5,  7, 5,  // 4
-			5, 5,  5,  5,  5,  5,  7,  5,  5, 5,  5,  5,  5,  5,  7, 5,  // 5
-			5, 5,  5,  5,  5,  5,  7,  5,  5, 5,  5,  5,  5,  5,  7, 5,  // 6
-			7, 7,  7,  7,  7,  7,  7,  7,  5, 5,  5,  5,  5,  5,  7, 5,  // 7
-			4, 4,  4,  4,  4,  4,  7,  4,  4, 4,  4,  4,  4,  4,  7, 4,  // 8
-			4, 4,  4,  4,  4,  4,  7,  4,  4, 4,  4,  4,  4,  4,  7, 4,  // 9
-			4, 4,  4,  4,  4,  4,  7,  4,  4, 4,  4,  4,  4,  4,  7, 4,  // A
-			4, 4,  4,  4,  4,  4,  7,  4,  4, 4,  4,  4,  4,  4,  7, 4,  // B
-			5, 10, 10, 10, 11, 11, 7,  11, 5, 10, 10, 10, 11, 17, 7, 11, // C
-			5, 10, 10, 10, 11, 11, 7,  11, 5, 10, 10, 10, 11, 17, 7, 11, // D
-			5, 10, 10, 18, 11, 11, 7,  11, 5, 5,  10, 4,  11, 17, 7, 11, // E
-			5, 10, 10, 4,  11, 11, 7,  11, 5, 5,  10, 4,  11, 17, 7, 11  // F
+		public void execute_machine_cycle(bool INTA)
+		{
+			if (machine_cycle == 0)
+			{
+				// interrupt processing
+				if (INTE && INTA && !ei_pending)
+				{
+					INTE = false;
+					HLTA = false;
+					instruction_register = OPCODE_RST7;
+				}
+				// normal instruction execution
+				else if (HLTA)
+				{
+					pc--; // move the program counter back if the last instruction was HLT
+				}
+				else
+				{
+					ei_pending = false;
+					instruction_register = read_byte_move_pc();
+				}
+			}
+
+			machine_cycle = decode(instruction_register, machine_cycle);
+			cc += MACHINE_CC;
+		}
+
+		int decode(byte opcode, int m_cycle)
+		{
+			actions[opcode]();
+			m_cycle++;
+			return m_cycle % M_CYCLES[opcode];
+		}
+
+		// an instruction execution time in macine cycles
+		static readonly int[] M_CYCLES = new int[] {
+		//  0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
+			1, 3, 2, 2, 2, 2, 2, 1, 1, 3, 2, 2, 2, 2, 2, 1, // 0
+			1, 3, 2, 2, 2, 2, 2, 1, 1, 3, 2, 2, 2, 2, 2, 1, // 1
+			1, 3, 5, 2, 2, 2, 2, 1, 1, 3, 5, 2, 2, 2, 2, 1, // 2
+			1, 3, 4, 2, 3, 3, 3, 1, 1, 3, 4, 2, 2, 2, 2, 1, // 3
+
+			2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, // 4
+			2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, // 5
+			2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, // 6
+			2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, // 7
+
+			1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 2, 1, // 8
+			1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 2, 1, // 9
+			1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 2, 1, // A
+			1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 2, 1, // B
+
+			4, 3, 3, 3, 6, 4, 2, 4, 4, 3, 3, 3, 6, 6, 2, 4, // C
+			4, 3, 3, 3, 6, 4, 2, 4, 4, 3, 3, 3, 6, 6, 2, 4, // D
+			4, 3, 3, 6, 6, 4, 2, 4, 4, 2, 3, 1, 6, 6, 2, 4, // E
+			4, 3, 3, 1, 6, 4, 2, 4, 4, 2, 3, 1, 6, 6, 2, 4  // F
 		};
 
 		//===============================================================================
@@ -110,53 +164,30 @@ namespace devector
 		// memory helpers
 		//
 		//===============================================================================
-
-		byte read_byte(UInt16 addr)
+		
+		byte read_byte_move_pc(Memory.Access access = Memory.Access.RAM)
 		{
-			return memory_read(addr);
-		}
-
-		void write_byte(UInt16 addr, byte val)
-		{
-			memory_write(addr, val);
-		}
-
-		UInt16 read_word(UInt16 addr)
-		{
-			return (UInt16)(memory_read((UInt16)(addr + 1)) << 8 | memory_read(addr));
-		}
-
-		void write_word(UInt16 addr, UInt16 val)
-		{
-			memory_write(addr, (byte)(val & 0xFF));
-			memory_write((UInt16)(addr + 1), (byte)(val >> 8));
-		}
-
-		// returns the next byte in memory, then increments the program counter
-		byte read_byte_move_pc()
-		{
-			var result = read_byte(pc);
+			var result = memory_read(pc, access);
 			pc++;
 			return result;
 		}
 
-		// returns the next word in memory, then increments the program counter
-		UInt16 read_word_move_pc()
+		UInt16 read_word_move_pc(Memory.Access access = Memory.Access.RAM)
 		{
-			UInt16 result = read_word(pc);
+			UInt16 result = (UInt16)(memory_read((UInt16)(pc + 1), access) << 8 | memory_read(pc, access));
 			pc += 2;
 			return result;
 		}
 
+		#region register helpers
 		//===============================================================================
 		//
 		// registers helpers
 		//
 		//===============================================================================
 
-		public UInt16 i8080_get_af()
+		public byte i8080_get_flags()
 		{
-			// note: bit 3 and 5 are always 0
 			int psw = 0;
 			psw |= flag_s ? 1 << 7 : 0;
 			psw |= flag_z ? 1 << 6 : 0;
@@ -167,13 +198,16 @@ namespace devector
 			psw |= unused_flaf_1 ? 1 << 1 : 0;
 			psw |= unused_flaf_3 ? 1 << 1 : 0;
 			psw |= unused_flaf_5 ? 1 << 1 : 0;
-			return (UInt16)(a << 8 | psw);
+			return (byte)psw;
 		}
-		public void i8080_set_psw(UInt16 af)
-		{
-			a = (byte)(af >> 8);
-			byte psw = (byte)(af & 0xFF);
 
+		public UInt16 i8080_get_af()
+		{
+			return (UInt16)(a << 8 | i8080_get_flags());
+		}
+
+		public void i8080_set_flags(byte psw)
+		{
 			flag_s = ((psw >> 7) & 1) == 1;
 			flag_z = ((psw >> 6) & 1) == 1;
 			flag_ac = ((psw >> 4) & 1) == 1;
@@ -208,42 +242,16 @@ namespace devector
 			h = (byte)(val >> 8);
 			l = (byte)(val & 0xFF);
 		}
+		#endregion
 
+		#region instruction helpers
 		//===============================================================================
 		//
-		// stack helpers
-		//
-		//===============================================================================
-
-		// pushes a value into the stack and updates the stack pointer
-		void i8080_push_stack(UInt16 val)
-		{
-			sp -= 2;
-			write_word(sp, val);
-		}
-
-		// pops a value from the stack and updates the stack pointer
-		UInt16 i8080_pop_stack()
-		{
-			UInt16 val = read_word(sp);
-			sp += 2;
-			return val;
-		}
-
-		//===============================================================================
-		//
-		// opcodes
+		// instruction helpers
 		//
 		//===============================================================================
 
-		void set_z_s_p(byte val)
-		{
-			flag_z = val == 0;
-			flag_s = (val >> 7) == 1;
-			flag_p = get_parity(val);
-		}
-
-        static readonly bool[] parity_table = new bool[]
+		static readonly bool[] parity_table = new bool[]
 		{
 			true, false, false, true, false, true, true, false, false, true, true, false, true, false, false, true,
 			false, true, true, false, true, false, false, true, true, false, false, true, false, true, true, false,
@@ -265,153 +273,21 @@ namespace devector
 		// returns the parity of a byte: 0 if a number of set bits of `val` is odd, else 1
 		bool get_parity(byte val)
 		{
-			/*
-			byte nb_one_bits = 0;
-			for (int i = 0; i < 8; i++)
-			{
-				nb_one_bits += (byte)((val >> i) & 1);
-			}
-
-			return (nb_one_bits & 1) == 0;
-			*/
 			return parity_table[val];
-
-        }
+		}
 		// determines if there was a carry between bit 'bit_no' and 'bit_no - 1' during the calculation of 'a + b + cy'.
-		bool get_carry(int bit_no, byte a, byte b, bool cy)
+		bool get_carry(int bit_no, byte _a, byte _b, bool _cy)
 		{
-			int result = a + b + (cy ? 1 : 0);
-			int carry = result ^ a ^ b;
+			int result = _a + _b + (_cy ? 1 : 0);
+			int carry = result ^ _a ^ _b;
 			return (carry & (1 << bit_no)) != 0;
 		}
 
-		// adds a value (+ an optional carry flag) to a register
-		void add(ref byte reg, byte val, bool _cy)
+		void set_z_s_p(byte val)
 		{
-			byte result = (byte)(reg + val + (_cy ? 1 : 0));
-			flag_c = get_carry(8, reg, val, _cy);
-			flag_ac = get_carry(4, reg, val, _cy);
-			set_z_s_p(result);
-			reg = result;
-		}
-
-		// substracts a byte (+ an optional carry flag) from a register
-		// see https://stackoverflow.com/a/8037485
-		void sub(ref byte reg, byte val, bool cy)
-		{
-			add(ref reg, (byte)(~val), !cy);
-			flag_c = !flag_c;
-		}
-
-		// adds a word to HL
-		void dad(UInt16 val)
-		{
-			flag_c = (i8080_get_hl() + val) >> 16 == 1;
-			i8080_set_hl((UInt16)(i8080_get_hl() + val));
-		}
-
-		// increments a byte
-		byte inr(byte val)
-		{
-			byte result = (byte)(val + 1);
-			flag_ac = (result & 0xF) == 0;
-			set_z_s_p(result);
-			return result;
-		}
-
-		// decrements a byte
-		byte dcr(byte val)
-		{
-			byte result = (byte)(val - 1);
-			flag_ac = !((result & 0xF) == 0xF);
-			set_z_s_p(result);
-			return result;
-		}
-
-		// executes a logic "and" between register A and a byte, then stores the
-		// result in register A
-		void ana(byte val)
-		{
-			byte result = (byte)(a & val);
-			flag_c = false;
-			flag_ac = ((a | val) & 0x08) != 0;
-			set_z_s_p(result);
-			a = result;
-		}
-
-		// executes a logic "xor" between register A and a byte, then stores the
-		// result in register A
-		void xra(byte val)
-		{
-			a ^= val;
-			flag_c = false;
-			flag_ac = false;
-			set_z_s_p(a);
-		}
-
-		// executes a logic "or" between register A and a byte, then stores the
-		// result in register A
-		void ora(byte val)
-		{
-			a |= val;
-			flag_c = false;
-			flag_ac = false;
-			set_z_s_p(a);
-		}
-
-		// compares the register A to another byte
-		void cmp(byte val)
-		{
-			// TODO: reuse the code from i8080_sub
-			UInt16 result = (UInt16)(a - val);
-			flag_c = result >> 8 == 1;
-			flag_ac = (~(a ^ result ^ val) & 0x10) == 0x10;
-			set_z_s_p((byte)(result & 0xFF));
-		}
-
-		// if a condition is met, it jumps to the next address
-		// pointed by the next word in memory 
-		void jmp_cond(bool condition)
-		{
-			UInt16 addr = read_word_move_pc();
-			if (condition)
-			{
-				pc = addr;
-			}
-		}
-
-		// pushes the current pc to the stack, then jumps to an address
-		void call(UInt16 addr)
-		{
-			i8080_push_stack(pc);
-			pc = addr;
-		}
-
-		// calls to next word in memory if a condition is met
-		void call_cond(bool condition)
-		{
-			UInt16 addr = read_word_move_pc();
-			if (condition)
-			{
-				call(addr);
-				cc += 6;
-			}
-		}
-
-		// returns from subroutine
-		void ret()
-		{
-			pc = i8080_pop_stack();
-		}
-
-		// returns from subroutine if a condition is met
-		void ret_cond(bool condition)
-		{
-			if (condition)
-			{
-				ret();
-				cc += 6;
-			}
+			flag_z = val == 0;
+			flag_s = (val >> 7) == 1;
+			flag_p = get_parity(val);
 		}
 
 		// rotate register A left
@@ -447,6 +323,452 @@ namespace devector
 			a = (byte)(a >> 1);
 			a |= (byte)(cy ? 1 << 7 : 0);
 		}
+		#endregion
+
+		void mov_r_r(ref byte ddd, byte sss)
+		{
+			if (machine_cycle == 0) 
+			{
+				TMP = sss;
+			}
+			else
+			{
+				ddd = TMP;
+			}
+		}
+
+		void load_r_p(ref byte ddd, UInt16 addr)
+		{
+			if (machine_cycle == 1)
+			{
+				ddd = memory_read(addr);
+			}
+		}
+
+		void mov_m_r(byte sss)
+		{
+			if (machine_cycle == 0)
+			{
+				TMP = sss;
+			}
+			else
+			{
+				memory_write(i8080_get_hl(), TMP);
+			}
+		}
+
+		void mvi_r_d(ref byte ddd)
+		{
+			if (machine_cycle == 1)
+			{
+				ddd = read_byte_move_pc();
+			}
+		}
+
+		void mvi_m_d()
+		{
+			if (machine_cycle == 1)
+			{
+				TMP = read_byte_move_pc();
+			}
+			else if (machine_cycle == 2)
+			{
+				memory_write(i8080_get_hl(), TMP);
+			}
+		}
+
+		void lda()
+		{
+			if (machine_cycle == 1)
+			{
+				Z = read_byte_move_pc();
+			}
+			else if (machine_cycle == 2)
+			{
+				W = read_byte_move_pc();
+			}
+			else if (machine_cycle == 3)
+			{
+				a = memory_read((UInt16)(W << 8 | Z));
+			}
+		}
+
+		void sta()
+		{
+			if (machine_cycle == 1)
+			{
+				Z = read_byte_move_pc();
+			}
+			else if (machine_cycle == 2)
+			{
+				W = read_byte_move_pc();
+			}
+			else if (machine_cycle == 3)
+			{
+				memory_write((UInt16)(W << 8 | Z), a);
+			}
+		}
+
+		void stax(UInt16 addr)
+		{
+			if (machine_cycle == 1)
+			{
+				memory_write(addr, a);
+			}
+		}
+
+		void lxi(ref byte hb, ref byte lb)
+		{
+			if (machine_cycle == 1)
+			{
+				lb = read_byte_move_pc();
+			}
+			else if (machine_cycle == 2)
+			{
+				hb = read_byte_move_pc();
+			}
+		}
+
+		void lxi_sp()
+		{
+			if (machine_cycle == 1)
+			{
+				byte lb = read_byte_move_pc();
+				sp = (UInt16)(sp & 0xff00 | lb);
+			}
+			else if (machine_cycle == 2)
+			{
+				byte hb = read_byte_move_pc();
+				sp = (UInt16)(hb<<8 | sp & 0xff);
+			}
+		}
+
+		void lhld()
+		{
+			if (machine_cycle == 1)
+			{
+				Z = read_byte_move_pc();
+			}
+			else if (machine_cycle == 2)
+			{
+				W = read_byte_move_pc();
+			}
+			else if (machine_cycle == 3)
+			{
+				l = memory_read((UInt16)(W << 8 | Z));
+				Z++;
+				W += (byte)(Z == 0 ? 1 : 0);
+			}
+			else if (machine_cycle == 4)
+			{
+				h = memory_read((UInt16)(W << 8 | Z));
+			}
+		}
+
+		void shld()
+		{
+			if (machine_cycle == 1)
+			{
+				Z = read_byte_move_pc();
+			}
+			else if (machine_cycle == 2)
+			{
+				W = read_byte_move_pc();
+			}
+			else if (machine_cycle == 3)
+			{
+				memory_write((UInt16)(W << 8 | Z), l);
+				Z++;
+				W += (byte)(Z == 0 ? 1 : 0);
+			}
+			else if (machine_cycle == 4)
+			{
+				memory_write((UInt16)(W << 8 | Z), h);
+			}
+		}
+
+		void sphl()
+		{
+			if (machine_cycle == 1)
+			{
+				sp = i8080_get_hl();
+			}
+		}
+
+		void xchg()
+		{
+			TMP = d;
+			d = h;
+			h = TMP;
+
+			TMP = e;
+			e = l;
+			l = TMP;
+		}
+
+		void xthl()
+		{
+			if (machine_cycle == 1)
+			{
+				Z = memory_read(sp, Memory.Access.STACK);
+			}
+			else if (machine_cycle == 2)
+			{
+				W = memory_read(sp + 1, Memory.Access.STACK);
+			}
+			else if (machine_cycle == 3)
+			{
+				memory_write(sp, l, Memory.Access.STACK);
+			}
+			else if (machine_cycle == 4)
+			{
+				memory_write(sp, h, Memory.Access.STACK);
+			}
+			else if (machine_cycle == 5)
+			{
+				h = W;
+				l = Z;
+			}
+		}
+
+		void push(byte hb, byte lb)
+		{
+			if (machine_cycle == 0)
+			{
+				sp--;
+			}
+			else if (machine_cycle == 1)
+			{
+				memory_write(sp, hb, Memory.Access.STACK);
+			}
+			else if (machine_cycle == 2)
+			{
+				sp--;
+			}
+			else if (machine_cycle == 3)
+			{
+				memory_write(sp, lb, Memory.Access.STACK);
+			}
+		}
+
+		void pop(ref byte hb, ref byte lb)
+		{
+			if (machine_cycle == 1)
+			{
+				lb = memory_read(sp, Memory.Access.STACK);
+				sp++;
+			}
+			else if (machine_cycle == 2)
+			{
+				hb = memory_read(sp, Memory.Access.STACK);
+				sp++;
+			}
+		}
+
+		// adds a value (+ an optional carry flag) to a register
+		void add(byte _a, byte _b, bool _cy)
+		{
+			ACT = _a;
+			TMP = _b;
+			a = (byte)(ACT + TMP + (_cy ? 1 : 0));
+			flag_c = get_carry(8, ACT, TMP, _cy);
+			flag_ac = get_carry(4, ACT, TMP, _cy);
+			set_z_s_p(a);
+		}
+
+		// substracts a byte (+ an optional carry flag) from a register
+		// see https://stackoverflow.com/a/8037485
+		void sub(byte _a, byte _b, bool _cy)
+		{
+			add(_a, (byte)(~b), !_cy);
+			flag_c = !flag_c;
+		}
+
+		void add_m(bool _cy)
+		{
+			if (machine_cycle == 0)
+			{
+				ACT = a;
+			}
+			else if (machine_cycle == 1)
+			{
+				TMP = memory_read(i8080_get_hl());
+				add(ACT, TMP, _cy);
+			}
+		}
+
+		void adi(bool _cy)
+		{
+			if (machine_cycle == 0)
+			{
+				ACT = a;
+			}
+			else if (machine_cycle == 1)
+			{
+				TMP = read_byte_move_pc();
+				add(ACT, TMP, _cy);
+			}
+		}
+
+		void sub_m(bool _cy)
+		{
+			if (machine_cycle == 0)
+			{
+				ACT = a;
+			}
+			else if (machine_cycle == 1)
+			{
+				TMP = memory_read(i8080_get_hl());
+				sub(ACT, TMP, _cy);
+			}
+		}
+
+		void sbi(bool _cy)
+		{
+			if (machine_cycle == 0)
+			{
+				ACT = a;
+			}
+			else if (machine_cycle == 1)
+			{
+				TMP = read_byte_move_pc();
+				sub(ACT, TMP, _cy);
+			}
+		}
+
+		void dad(UInt16 val)
+		{
+			if (machine_cycle == 1)
+			{
+				ACT = (byte)(val & 0xff);
+				TMP = l;
+				var res = ACT + TMP;
+				flag_c = (res >> 8) == 1;
+				l = (byte)(res);
+			}
+			else if (machine_cycle == 2)
+			{
+				ACT = (byte)(val>>8);
+				TMP = h;
+				var result = ACT + TMP + (flag_c ? 1 : 0);
+				flag_c = (result >> 8) == 1;
+				l = (byte)(result);
+			}
+		}
+
+		void inr(ref byte ddd)
+		{
+			if (machine_cycle == 0)
+			{
+				TMP = ddd;
+				TMP++;
+				flag_ac = (TMP & 0xF) == 0;
+				set_z_s_p(TMP);
+			}
+			else if (machine_cycle == 1)
+			{
+				ddd = TMP;
+			}
+		}
+
+		void inr_m()
+		{
+			if (machine_cycle == 1)
+			{
+				TMP = memory_read(i8080_get_hl());
+				TMP++;
+				flag_ac = (TMP & 0xF) == 0;
+				set_z_s_p(TMP);
+			}
+			else if (machine_cycle == 2)
+			{
+				memory_write(i8080_get_hl(), TMP);
+			}
+		}
+
+		void dcr(ref byte ddd)
+		{
+			if (machine_cycle == 0)
+			{
+				TMP = ddd;
+				TMP--;
+				flag_ac = !((TMP & 0xF) == 0xF);
+				set_z_s_p(TMP);
+			}
+			else if (machine_cycle == 1)
+			{
+				ddd = TMP;
+			}
+		}
+
+		void dcr_m()
+		{
+			if (machine_cycle == 1)
+			{
+				TMP = memory_read(i8080_get_hl());
+				TMP--;
+				flag_ac = !((TMP & 0xF) == 0xF);
+				set_z_s_p(TMP);
+			}
+			else if (machine_cycle == 2)
+			{
+				memory_write(i8080_get_hl(), TMP);
+			}
+		}
+
+		void inx(ref byte hb, ref byte lb)
+		{
+			if (machine_cycle == 0)
+			{
+				Z = (byte)(lb + 1);
+				W = (byte)(Z == 0 ? hb + 1 : hb);
+			}
+			else if (machine_cycle == 1)
+			{
+				h = W;
+				l = Z;
+			}
+		}
+
+		void inx_sp()
+		{
+			if (machine_cycle == 0)
+			{
+				Z = (byte)(sp + 1);
+				W = (byte)(Z == 0 ? sp>>8 + 1 : sp >> 8);
+			}
+			else if (machine_cycle == 1)
+			{
+				sp = (UInt16)(W << 8 | Z);
+			}
+		}
+
+		void dcx(ref byte hb, ref byte lb)
+		{
+			if (machine_cycle == 0)
+			{
+				Z = (byte)(lb - 1);
+				W = (byte)(Z == 0xff ? hb - 1 : hb);
+			}
+			else if (machine_cycle == 1)
+			{
+				h = W;
+				l = Z;
+			}
+		}
+
+		void dcx_sp()
+		{
+			if (machine_cycle == 0)
+			{
+				Z = (byte)(sp - 1);
+				W = (byte)(Z == 0xff ? sp >> 8 - 1 : sp >> 8);
+			}
+			else if (machine_cycle == 1)
+			{
+				sp = (UInt16)(W << 8 | Z);
+			}
+		}
 
 		// Decimal Adjust Accumulator: the eight-bit number in register A is adjusted
 		// to form two four-bit binary-coded-decimal digits.
@@ -470,337 +792,625 @@ namespace devector
 				cy = true;
 			}
 
-			add(ref a, correction, false);
+			add(a, correction, false);
 			flag_c = cy;
 		}
 
-		// switches the value of registers DE and HL
-		void xchg()
+		void ana(byte sss)
 		{
-			UInt16 de = i8080_get_de();
-			i8080_set_de(i8080_get_hl());
-			i8080_set_hl(de);
+			ACT = a;
+			TMP = sss;
+			a = (byte)(ACT & TMP);
+			flag_c = false;
+			flag_ac = ((ACT | TMP) & 0x08) != 0;
+			set_z_s_p(a);
 		}
 
-		// switches the value of a word at (sp) and HL
-		void xthl()
+		void ana_m()
 		{
-			UInt16 val = read_word(sp);
-			write_word(sp, i8080_get_hl());
-			i8080_set_hl(val);
-		}
-
-
-		// executes one opcode
-		void execute(byte opcode)
+			if (machine_cycle == 0)
 			{
-				cc += I8080_OPCODES_CYCLES[opcode];
-
-				// when DI is executed, interrupts won't be serviced
-				// until the end of next instruction:
-				int_pending_instructions = (byte)(int_pending_instructions > 0 ? int_pending_instructions - 1 : 0);
-
-				switch (opcode) 
-				{
-					case 0x7F: a = a; break; // MOV A,A
-					case 0x78: a = b; break; // MOV A,B
-					case 0x79: a = c; break; // MOV A,C
-					case 0x7A: a = d; break; // MOV A,D
-					case 0x7B: a = e; break; // MOV A,E
-					case 0x7C: a = h; break; // MOV A,H
-					case 0x7D: a = l; break; // MOV A,L
-					case 0x7E: a = read_byte(i8080_get_hl()); break; // MOV A,M
-
-					case 0x0A: a = read_byte(i8080_get_bc()); break; // LDAX B
-					case 0x1A: a = read_byte(i8080_get_de()); break; // LDAX D
-					case 0x3A: a = read_byte(read_word_move_pc()); break; // LDA word
-
-					case 0x47: b = a; break; // MOV B,A
-					case 0x40: b = b; break; // MOV B,B
-					case 0x41: b = c; break; // MOV B,C
-					case 0x42: b = d; break; // MOV B,D
-					case 0x43: b = e; break; // MOV B,E
-					case 0x44: b = h; break; // MOV B,H
-					case 0x45: b = l; break; // MOV B,L
-					case 0x46: b = read_byte(i8080_get_hl()); break; // MOV B,M
-
-					case 0x4F: c = a; break; // MOV C,A
-					case 0x48: c = b; break; // MOV C,B
-					case 0x49: c = c; break; // MOV C,C
-					case 0x4A: c = d; break; // MOV C,D
-					case 0x4B: c = e; break; // MOV C,E
-					case 0x4C: c = h; break; // MOV C,H
-					case 0x4D: c = l; break; // MOV C,L
-					case 0x4E: c = read_byte(i8080_get_hl()); break; // MOV C,M
-
-					case 0x57: d = a; break; // MOV D,A
-					case 0x50: d = b; break; // MOV D,B
-					case 0x51: d = c; break; // MOV D,C
-					case 0x52: d = d; break; // MOV D,D
-					case 0x53: d = e; break; // MOV D,E
-					case 0x54: d = h; break; // MOV D,H
-					case 0x55: d = l; break; // MOV D,L
-					case 0x56: d = read_byte(i8080_get_hl()); break; // MOV D,M
-
-					case 0x5F: e = a; break; // MOV E,A
-					case 0x58: e = b; break; // MOV E,B
-					case 0x59: e = c; break; // MOV E,C
-					case 0x5A: e = d; break; // MOV E,D
-					case 0x5B: e = e; break; // MOV E,E
-					case 0x5C: e = h; break; // MOV E,H
-					case 0x5D: e = l; break; // MOV E,L
-					case 0x5E: e = read_byte(i8080_get_hl()); break; // MOV E,M
-
-					case 0x67: h = a; break; // MOV H,A
-					case 0x60: h = b; break; // MOV H,B
-					case 0x61: h = c; break; // MOV H,C
-					case 0x62: h = d; break; // MOV H,D
-					case 0x63: h = e; break; // MOV H,E
-					case 0x64: h = h; break; // MOV H,H
-					case 0x65: h = l; break; // MOV H,L
-					case 0x66: h = read_byte(i8080_get_hl()); break; // MOV H,M
-
-					case 0x6F: l = a; break; // MOV L,A
-					case 0x68: l = b; break; // MOV L,B
-					case 0x69: l = c; break; // MOV L,C
-					case 0x6A: l = d; break; // MOV L,D
-					case 0x6B: l = e; break; // MOV L,E
-					case 0x6C: l = h; break; // MOV L,H
-					case 0x6D: l = l; break; // MOV L,L
-					case 0x6E: l = read_byte(i8080_get_hl()); break; // MOV L,M
-
-					case 0x77: write_byte(i8080_get_hl(), a); break; // MOV M,A
-					case 0x70: write_byte(i8080_get_hl(), b); break; // MOV M,B
-					case 0x71: write_byte(i8080_get_hl(), c); break; // MOV M,C
-					case 0x72: write_byte(i8080_get_hl(), d); break; // MOV M,D
-					case 0x73: write_byte(i8080_get_hl(), e); break; // MOV M,E
-					case 0x74: write_byte(i8080_get_hl(), h); break; // MOV M,H
-					case 0x75: write_byte(i8080_get_hl(), l); break; // MOV M,L
-
-					case 0x3E: a = read_byte_move_pc(); break; // MVI A,byte
-					case 0x06: b = read_byte_move_pc(); break; // MVI B,byte
-					case 0x0E: c = read_byte_move_pc(); break; // MVI C,byte
-					case 0x16: d = read_byte_move_pc(); break; // MVI D,byte
-					case 0x1E: e = read_byte_move_pc(); break; // MVI E,byte
-					case 0x26: h = read_byte_move_pc(); break; // MVI H,byte
-					case 0x2E: l = read_byte_move_pc(); break; // MVI L,byte
-					case 0x36: write_byte(i8080_get_hl(), read_byte_move_pc()); break; // MVI M,byte
-
-					case 0x02: write_byte(i8080_get_bc(), a); break; // STAX B
-					case 0x12: write_byte(i8080_get_de(), a); break; // STAX D
-					case 0x32: write_byte(read_word_move_pc(), a); break; // STA word
-
-					case 0x01: i8080_set_bc(read_word_move_pc()); break; // LXI B,word
-					case 0x11: i8080_set_de(read_word_move_pc()); break; // LXI D,word
-					case 0x21: i8080_set_hl(read_word_move_pc()); break; // LXI H,word
-					case 0x31: sp = read_word_move_pc(); break; // LXI SP,word
-					case 0x2A: i8080_set_hl(read_word(read_word_move_pc())); break; // LHLD
-					case 0x22: write_word(read_word_move_pc(), i8080_get_hl()); break; // SHLD
-					case 0xF9: sp = i8080_get_hl(); break; // SPHL
-
-					case 0xEB: xchg(); break; // XCHG
-					case 0xE3: xthl(); break; // XTHL
-
-					case 0x87: add(ref a, a, false); break; // ADD A
-					case 0x80: add(ref a, b, false); break; // ADD B
-					case 0x81: add(ref a, c, false); break; // ADD C
-					case 0x82: add(ref a, d, false); break; // ADD D
-					case 0x83: add(ref a, e, false); break; // ADD E
-					case 0x84: add(ref a, h, false); break; // ADD H
-					case 0x85: add(ref a, l, false); break; // ADD L
-					case 0x86: add(ref a, read_byte(i8080_get_hl()), false); break; // ADD M
-					case 0xC6: add(ref a, read_byte_move_pc(), false); break; // ADI byte
-
-					case 0x8F: add(ref a, a, flag_c); break; // ADC A
-					case 0x88: add(ref a, b, flag_c); break; // ADC B
-					case 0x89: add(ref a, c, flag_c); break; // ADC C
-					case 0x8A: add(ref a, d, flag_c); break; // ADC D
-					case 0x8B: add(ref a, e, flag_c); break; // ADC E
-					case 0x8C: add(ref a, h, flag_c); break; // ADC H
-					case 0x8D: add(ref a, l, flag_c); break; // ADC L
-					case 0x8E: add(ref a, read_byte(i8080_get_hl()), flag_c); break; // ADC M
-					case 0xCE: add(ref a, read_byte_move_pc(), flag_c); break; // ACI byte
-
-					case 0x97: sub(ref a, a, false); break; // SUB A
-					case 0x90: sub(ref a, b, false); break; // SUB B
-					case 0x91: sub(ref a, c, false); break; // SUB C
-					case 0x92: sub(ref a, d, false); break; // SUB D
-					case 0x93: sub(ref a, e, false); break; // SUB E
-					case 0x94: sub(ref a, h, false); break; // SUB H
-					case 0x95: sub(ref a, l, false); break; // SUB L
-					case 0x96: sub(ref a, read_byte(i8080_get_hl()), false); break; // SUB M
-					case 0xD6: sub(ref a, read_byte_move_pc(), false); break; // SUI byte
-
-					case 0x9F: sub(ref a, a, flag_c); break; // SBB A
-					case 0x98: sub(ref a, b, flag_c); break; // SBB B
-					case 0x99: sub(ref a, c, flag_c); break; // SBB C
-					case 0x9A: sub(ref a, d, flag_c); break; // SBB D
-					case 0x9B: sub(ref a, e, flag_c); break; // SBB E
-					case 0x9C: sub(ref a, h, flag_c); break; // SBB H
-					case 0x9D: sub(ref a, l, flag_c); break; // SBB L
-					case 0x9E: sub(ref a, read_byte(i8080_get_hl()), flag_c); break; // SBB M
-					case 0xDE: sub(ref a, read_byte_move_pc(), flag_c); break; // SBI byte
-
-					case 0x09: dad(i8080_get_bc()); break; // DAD B
-					case 0x19: dad(i8080_get_de()); break; // DAD D
-					case 0x29: dad(i8080_get_hl()); break; // DAD H
-					case 0x39: dad(sp); break; // DAD SP
-
-					case 0xF3: iff = false; break; // DI
-					case 0xFB:
-						iff = true;
-						int_pending_instructions = 1;
-						break; // EI
-					case 0x00: break; // NOP
-					case 0x76: HLTA = true; break; // HLT
-
-					case 0x3C: a = inr(a); break; // INR A
-					case 0x04: b = inr(b); break; // INR B
-					case 0x0C: c = inr(c); break; // INR C
-					case 0x14: d = inr(d); break; // INR D
-					case 0x1C: e = inr(e); break; // INR E
-					case 0x24: h = inr(h); break; // INR H
-					case 0x2C: l = inr(l); break; // INR L
-					case 0x34: write_byte(i8080_get_hl(), inr(read_byte(i8080_get_hl()))); break; // INR M
-
-					case 0x3D: a = dcr(a); break; // DCR A
-					case 0x05: b = dcr(b); break; // DCR B
-					case 0x0D: c = dcr(c); break; // DCR C
-					case 0x15: d = dcr(d); break; // DCR D
-					case 0x1D: e = dcr(e); break; // DCR E
-					case 0x25: h = dcr(h); break; // DCR H
-					case 0x2D: l = dcr(l); break; // DCR L
-					case 0x35: write_byte(i8080_get_hl(), dcr(read_byte(i8080_get_hl()))); break; // DCR M
-
-					case 0x03: i8080_set_bc((UInt16)(i8080_get_bc() + 1)); break; // INX B
-					case 0x13: i8080_set_de((UInt16)(i8080_get_de() + 1)); break; // INX D
-					case 0x23: i8080_set_hl((UInt16)(i8080_get_hl() + 1)); break; // INX H
-					case 0x33: sp += 1; break; // INX SP
-
-					case 0x0B: i8080_set_bc((UInt16)(i8080_get_bc() - 1)); break; // DCX B
-					case 0x1B: i8080_set_de((UInt16)(i8080_get_de() - 1)); break; // DCX D
-					case 0x2B: i8080_set_hl((UInt16)(i8080_get_hl() - 1)); break; // DCX H
-					case 0x3B: sp -= 1; break; // DCX SP
-
-					case 0x27: daa(); break; // DAA
-					case 0x2F: a = (byte)(~a); break; // CMA
-					case 0x37: flag_c = true; break; // STC
-					case 0x3F: flag_c = !flag_c; break; // CMC
-
-					case 0x07: rlc(); break; // RLC (rotate left)
-					case 0x0F: rrc(); break; // RRC (rotate right)
-					case 0x17: ral(); break; // RAL
-					case 0x1F: rar(); break; // RAR
-
-					case 0xA7: ana(a); break; // ANA A
-					case 0xA0: ana(b); break; // ANA B
-					case 0xA1: ana(c); break; // ANA C
-					case 0xA2: ana(d); break; // ANA D
-					case 0xA3: ana(e); break; // ANA E
-					case 0xA4: ana(h); break; // ANA H
-					case 0xA5: ana(l); break; // ANA L
-					case 0xA6: ana(read_byte(i8080_get_hl())); break; // ANA M
-					case 0xE6: ana(read_byte_move_pc()); break; // ANI byte
-
-					case 0xAF: xra(a); break; // XRA A
-					case 0xA8: xra(b); break; // XRA B
-					case 0xA9: xra(c); break; // XRA C
-					case 0xAA: xra(d); break; // XRA D
-					case 0xAB: xra(e); break; // XRA E
-					case 0xAC: xra(h); break; // XRA H
-					case 0xAD: xra(l); break; // XRA L
-					case 0xAE: xra(read_byte(i8080_get_hl())); break; // XRA M
-					case 0xEE: xra(read_byte_move_pc()); break; // XRI byte
-
-					case 0xB7: ora(a); break; // ORA A
-					case 0xB0: ora(b); break; // ORA B
-					case 0xB1: ora(c); break; // ORA C
-					case 0xB2: ora(d); break; // ORA D
-					case 0xB3: ora(e); break; // ORA E
-					case 0xB4: ora(h); break; // ORA H
-					case 0xB5: ora(l); break; // ORA L
-					case 0xB6: ora(read_byte(i8080_get_hl())); break; // ORA M
-					case 0xF6: ora(read_byte_move_pc()); break; // ORI byte
-
-					case 0xBF: cmp(a); break; // CMP A
-					case 0xB8: cmp(b); break; // CMP B
-					case 0xB9: cmp(c); break; // CMP C
-					case 0xBA: cmp(d); break; // CMP D
-					case 0xBB: cmp(e); break; // CMP E
-					case 0xBC: cmp(h); break; // CMP H
-					case 0xBD: cmp(l); break; // CMP L
-					case 0xBE: cmp(read_byte(i8080_get_hl())); break; // CMP M
-					case 0xFE: cmp(read_byte_move_pc()); break; // CPI byte
-
-					case 0xC3: pc = read_word_move_pc(); break; // JMP
-					case 0xC2: jmp_cond(flag_z == false); break; // JNZ
-					case 0xCA: jmp_cond(flag_z == true); break; // JZ
-					case 0xD2: jmp_cond(flag_c == false); break; // JNC
-					case 0xDA: jmp_cond(flag_c == true); break; // JC
-					case 0xE2: jmp_cond(flag_p == false); break; // JPO
-					case 0xEA: jmp_cond(flag_p == true); break; // JPE
-					case 0xF2: jmp_cond(flag_s == false); break; // JP
-					case 0xFA: jmp_cond(flag_s == true); break; // JM
-
-					case 0xE9: pc = i8080_get_hl(); break; // PCHL
-					case 0xCD: call(read_word_move_pc()); break; // CALL
-
-					case 0xC4: call_cond(flag_z == false); break; // CNZ
-					case 0xCC: call_cond(flag_z == true); break; // CZ
-					case 0xD4: call_cond(flag_c == false); break; // CNC
-					case 0xDC: call_cond(flag_c == true); break; // CC
-					case 0xE4: call_cond(flag_p == false); break; // CPO
-					case 0xEC: call_cond(flag_p == true); break; // CPE
-					case 0xF4: call_cond(flag_s == false); break; // CP
-					case 0xFC: call_cond(flag_s == true); break; // CM
-
-					case 0xC9: ret(); break; // RET
-					case 0xC0: ret_cond(flag_z == false); break; // RNZ
-					case 0xC8: ret_cond(flag_z == true); break; // RZ
-					case 0xD0: ret_cond(flag_c == false); break; // RNC
-					case 0xD8: ret_cond(flag_c == true); break; // RC
-					case 0xE0: ret_cond(flag_p == false); break; // RPO
-					case 0xE8: ret_cond(flag_p == true); break; // RPE
-					case 0xF0: ret_cond(flag_s == false); break; // RP
-					case 0xF8: ret_cond(flag_s == true); break; // RM
-
-					case 0xC7: call(0x00); break; // RST 0
-					case 0xCF: call(0x08); break; // RST 1
-					case 0xD7: call(0x10); break; // RST 2
-					case 0xDF: call(0x18); break; // RST 3
-					case 0xE7: call(0x20); break; // RST 4
-					case 0xEF: call(0x28); break; // RST 5
-					case 0xF7: call(0x30); break; // RST 6
-					case 0xFF: call(0x38); break; // RST 7
-
-					case 0xC5: i8080_push_stack(i8080_get_bc()); break; // PUSH B
-					case 0xD5: i8080_push_stack(i8080_get_de()); break; // PUSH D
-					case 0xE5: i8080_push_stack(i8080_get_hl()); break; // PUSH H
-					case 0xF5: i8080_push_stack(i8080_get_af()); break; // PUSH PSW
-					case 0xC1: i8080_set_bc(i8080_pop_stack()); break; // POP B
-					case 0xD1: i8080_set_de(i8080_pop_stack()); break; // POP D
-					case 0xE1: i8080_set_hl(i8080_pop_stack()); break; // POP H
-					case 0xF1: i8080_set_psw(i8080_pop_stack()); break; // POP PSW
-
-					case 0xDB: a = input(read_byte_move_pc()); break; // IN
-					case 0xD3: output(read_byte_move_pc(), a); break; // OUT
-
-					case 0x08:
-					case 0x10:
-					case 0x18:
-					case 0x20:
-					case 0x28:
-					case 0x30:
-					case 0x38: break; // undocumented NOPs
-
-					case 0xD9: ret(); break; // undocumented RET
-
-					case 0xDD:
-					case 0xED:
-					case 0xFD: call(read_word_move_pc()); break; // undocumented CALLs
-
-					case 0xCB: pc = read_word_move_pc(); break; // undocumented JMP
+				ACT = a;
 			}
+			else if (machine_cycle == 1)
+			{
+				TMP = memory_read(i8080_get_hl());
+				a = (byte)(ACT & TMP);
+				flag_c = false;
+				flag_ac = ((ACT | TMP) & 0x08) != 0;
+				set_z_s_p(a);
+			}
+		}
+
+		void ani()
+		{
+			if (machine_cycle == 0)
+			{
+				ACT = a;
+			}
+			else if (machine_cycle == 1)
+			{
+				TMP = read_byte_move_pc();
+				a = (byte)(ACT & TMP);
+				flag_c = false;
+				flag_ac = ((ACT | TMP) & 0x08) != 0;
+				set_z_s_p(a);
+			}
+		}
+
+		// executes a logic "xor" between register A and a byte, then stores the
+		// result in register A
+		void xra(byte sss)
+		{
+			ACT = a;
+			TMP = sss;
+			a = (byte) (ACT ^ TMP);
+			flag_c = false;
+			flag_ac = false;
+			set_z_s_p(a);
+	}
+
+		void xra_m()
+		{
+			if (machine_cycle == 0)
+			{
+				ACT = a;
+			}
+			else if (machine_cycle == 1)
+			{
+				TMP = memory_read(i8080_get_hl());
+				a = (byte)(ACT ^ TMP);
+				flag_c = false;
+				flag_ac = false;
+				set_z_s_p(a);
+			}
+		}
+
+		void xri()
+		{
+			if (machine_cycle == 0)
+			{
+				ACT = a;
+			}
+			else if (machine_cycle == 1)
+			{
+				TMP = read_byte_move_pc();
+				a = (byte)(ACT ^ TMP);
+				flag_c = false;
+				flag_ac = false;
+				set_z_s_p(a);
+			}
+		}
+
+		// executes a logic "or" between register A and a byte, then stores the
+		// result in register A
+		void ora(byte sss)
+		{
+			ACT = a;
+			TMP = sss;
+			a = (byte) (ACT | TMP);
+			flag_c = false;
+			flag_ac = false;
+			set_z_s_p(a);
+		}
+
+		void ora_m()
+		{
+			if (machine_cycle == 0)
+			{
+				ACT = a;
+			}
+			else if (machine_cycle == 1)
+			{
+				TMP = memory_read(i8080_get_hl());
+				a = (byte)(ACT | TMP);
+				flag_c = false;
+				flag_ac = false;
+				set_z_s_p(a);
+			}
+		}
+
+		void ori()
+		{
+			if (machine_cycle == 0)
+			{
+				ACT = a;
+			}
+			else if (machine_cycle == 1)
+			{
+				TMP = read_byte_move_pc();
+				a = (byte)(ACT | TMP);
+				flag_c = false;
+				flag_ac = false;
+				set_z_s_p(a);
+			}
+		}
+
+		// compares the register A to another byte
+		void cmp(byte sss)
+		{
+			ACT = a;
+			TMP = sss;
+			UInt16 result = (UInt16)(ACT - TMP);
+			flag_c = result >> 8 == 1;
+			flag_ac = (~(ACT ^ result ^ TMP) & 0x10) == 0x10;
+			set_z_s_p((byte)(result & 0xFF));
+		}
+
+		void cmp_m()
+		{
+			if (machine_cycle == 0)
+			{
+				ACT = a;
+			}
+			else if (machine_cycle == 1)
+			{
+				TMP = memory_read(i8080_get_hl());
+				UInt16 result = (UInt16)(ACT - TMP);
+				flag_c = result >> 8 == 1;
+				flag_ac = (~(ACT ^ result ^ TMP) & 0x10) == 0x10;
+				set_z_s_p((byte)(result & 0xFF));
+			}
+		}
+
+		void cpi()
+		{
+			if (machine_cycle == 0)
+			{
+				ACT = a;
+			}
+			else if (machine_cycle == 1)
+			{
+				TMP = read_byte_move_pc();
+				UInt16 result = (UInt16)(ACT - TMP);
+				flag_c = result >> 8 == 1;
+				flag_ac = (~(ACT ^ result ^ TMP) & 0x10) == 0x10;
+				set_z_s_p((byte)(result & 0xFF));
+			}
+		}
+
+		void jmp(bool condition = true)
+		{
+			if (machine_cycle == 1)
+			{
+				Z = read_byte_move_pc();
+			}
+			else if (machine_cycle == 2)
+			{
+				W = read_byte_move_pc();
+			}
+			else if (machine_cycle == 3)
+			{
+				if (condition)
+				{
+					pc = (UInt16)(W << 8 | Z);
+				}
+			}
+		}
+
+		void pchl()
+		{
+			if (machine_cycle == 1)
+			{
+				pc = i8080_get_hl();
+			}
+		}
+
+		// pushes the current pc to the stack, then jumps to an address
+		void call(bool condition = true)
+		{
+			if (machine_cycle == 0)
+			{
+				if (condition)
+				{
+					sp--;
+				}
+			}
+			else if (machine_cycle == 1)
+			{
+				Z = read_byte_move_pc();
+			}
+			else if (machine_cycle == 2)
+			{
+				W = read_byte_move_pc();
+			}
+			else if (machine_cycle == 3)
+			{
+				memory_write(sp, (byte)(pc >> 8), Memory.Access.STACK);
+				if (condition)
+				{
+					sp--;
+				}
+				else
+				{
+					machine_cycle = 5;
+				}
+			}
+			else if (machine_cycle == 4)
+			{
+				memory_write(sp, (byte)(pc & 0xff), Memory.Access.STACK);
+			}
+			else if (machine_cycle == 5)
+			{
+				pc = (UInt16)(W << 8 | Z);
+			}
+		}
+
+		// pushes the current pc to the stack, then jumps to an address
+		void rst(byte addr)
+		{
+			if (machine_cycle == 0)
+			{
+				sp--;
+			}
+			else if (machine_cycle == 1)
+			{
+				memory_write(sp, (byte)(pc >> 8), Memory.Access.STACK);
+				sp--;
+			}
+			else if (machine_cycle == 2)
+			{
+				W = 0;
+				Z = addr;
+                memory_write(sp, (byte)(pc & 0xff), Memory.Access.STACK);
+			}
+			else if (machine_cycle == 3)
+			{
+				pc = (UInt16)(W << 8 | Z);
+			}
+		}
+
+		// returns from subroutine
+		void ret()
+		{
+			if (machine_cycle == 1)
+			{
+				Z = memory_read(sp, Memory.Access.STACK);
+				sp++;
+			}
+			else if (machine_cycle == 2)
+			{
+				W = memory_read(sp, Memory.Access.STACK);
+				sp++;
+				pc = (UInt16)(W << 8 | Z);
+			}
+		}
+
+		// returns from subroutine if a condition is met
+		void ret_cond(bool condition)
+		{
+			if (machine_cycle == 1)
+			{
+				if (condition) machine_cycle = 3;
+			}
+			else if (machine_cycle == 2)
+			{
+				Z = memory_read(sp, Memory.Access.STACK);
+				sp++;
+			}
+			else if (machine_cycle == 3)
+			{
+				W = memory_read(sp, Memory.Access.STACK);
+				sp++;
+				pc = (UInt16)(W << 8 | Z);
+			}
+		}
+
+        void in_d()
+        {
+            if (machine_cycle == 1)
+            {
+				W = 0;
+				Z = read_byte_move_pc();
+                a = input(Z);
+            }
+        }
+
+        void out_d()
+        {
+            if (machine_cycle == 1)
+            {
+                W = 0;
+                Z = read_byte_move_pc();
+                output(Z, a);
+            }
+        }
+
+        private void incode_actions()
+		{
+			actions[ 0x7F ] = () => { mov_r_r(ref a, a); }; // MOV A,A
+			actions[ 0x78 ] = () => { mov_r_r(ref a, b); }; // MOV A,B
+			actions[ 0x79 ] = () => { mov_r_r(ref a, c); }; // MOV A,C
+			actions[ 0x7A ] = () => { mov_r_r(ref a, d); }; // MOV A,D
+			actions[ 0x7B ] = () => { mov_r_r(ref a, e); }; // MOV A,E
+			actions[ 0x7C ] = () => { mov_r_r(ref a, h); }; // MOV A,H
+			actions[ 0x7D ] = () => { mov_r_r(ref a, l); }; // MOV A,L
+
+			actions[ 0x47 ] = () => { mov_r_r(ref b, a); }; // MOV B,A
+			actions[ 0x40 ] = () => { mov_r_r(ref b, b); }; // MOV B,B
+			actions[ 0x41 ] = () => { mov_r_r(ref b, c); }; // MOV B,C
+			actions[ 0x42 ] = () => { mov_r_r(ref b, d); }; // MOV B,D
+			actions[ 0x43 ] = () => { mov_r_r(ref b, e); }; // MOV B,E
+			actions[ 0x44 ] = () => { mov_r_r(ref b, h); }; // MOV B,H
+			actions[ 0x45 ] = () => { mov_r_r(ref b, l); }; // MOV B,L
+
+			actions[ 0x4F ] = () => { mov_r_r(ref c, a); }; // MOV C,A
+			actions[ 0x48 ] = () => { mov_r_r(ref c, b); }; // MOV C,B
+			actions[ 0x49 ] = () => { mov_r_r(ref c, c); }; // MOV C,C
+			actions[ 0x4A ] = () => { mov_r_r(ref c, d); }; // MOV C,D
+			actions[ 0x4B ] = () => { mov_r_r(ref c, e); }; // MOV C,E
+			actions[ 0x4C ] = () => { mov_r_r(ref c, h); }; // MOV C,H
+			actions[ 0x4D ] = () => { mov_r_r(ref c, l); }; // MOV C,L
+
+			actions[ 0x57 ] = () => { mov_r_r(ref d, a); }; // MOV D,A
+			actions[ 0x50 ] = () => { mov_r_r(ref d, b); }; // MOV D,B
+			actions[ 0x51 ] = () => { mov_r_r(ref d, c); }; // MOV D,C
+			actions[ 0x52 ] = () => { mov_r_r(ref d, d); }; // MOV D,D
+			actions[ 0x53 ] = () => { mov_r_r(ref d, e); }; // MOV D,E
+			actions[ 0x54 ] = () => { mov_r_r(ref d, h); }; // MOV D,H
+			actions[ 0x55 ] = () => { mov_r_r(ref d, l); }; // MOV D,L
+
+			actions[ 0x5F ] = () => { mov_r_r(ref e, a); }; // MOV E,A
+			actions[ 0x58 ] = () => { mov_r_r(ref e, b); }; // MOV E,B
+			actions[ 0x59 ] = () => { mov_r_r(ref e, c); }; // MOV E,C
+			actions[ 0x5A ] = () => { mov_r_r(ref e, d); }; // MOV E,D
+			actions[ 0x5B ] = () => { mov_r_r(ref e, e); }; // MOV E,E
+			actions[ 0x5C ] = () => { mov_r_r(ref e, h); }; // MOV E,H
+			actions[ 0x5D ] = () => { mov_r_r(ref e, l); }; // MOV E,L
+
+			actions[ 0x67 ] = () => { mov_r_r(ref h, a); }; // MOV H,A
+			actions[ 0x60 ] = () => { mov_r_r(ref h, b); }; // MOV H,B
+			actions[ 0x61 ] = () => { mov_r_r(ref h, c); }; // MOV H,C
+			actions[ 0x62 ] = () => { mov_r_r(ref h, d); }; // MOV H,D
+			actions[ 0x63 ] = () => { mov_r_r(ref h, e); }; // MOV H,E
+			actions[ 0x64 ] = () => { mov_r_r(ref h, h); }; // MOV H,H
+			actions[ 0x65 ] = () => { mov_r_r(ref h, l); }; // MOV H,L
+
+			actions[ 0x6F ] = () => { mov_r_r(ref l, a); }; // MOV L,A
+			actions[ 0x68 ] = () => { mov_r_r(ref l, b); }; // MOV L,B
+			actions[ 0x69 ] = () => { mov_r_r(ref l, c); }; // MOV L,C
+			actions[ 0x6A ] = () => { mov_r_r(ref l, d); }; // MOV L,D
+			actions[ 0x6B ] = () => { mov_r_r(ref l, e); }; // MOV L,E
+			actions[ 0x6C ] = () => { mov_r_r(ref l, h); }; // MOV L,H
+			actions[ 0x6D ] = () => { mov_r_r(ref l, l); }; // MOV L,L
+
+			actions[ 0x7E ] = () => { load_r_p(ref a, i8080_get_hl()); }; // MOV A,M
+			actions[ 0x46 ] = () => { load_r_p(ref b, i8080_get_hl()); }; // MOV B,M
+			actions[ 0x4E ] = () => { load_r_p(ref c, i8080_get_hl()); }; // MOV C,M
+			actions[ 0x56 ] = () => { load_r_p(ref d, i8080_get_hl()); }; // MOV D,M
+			actions[ 0x5E ] = () => { load_r_p(ref e, i8080_get_hl()); }; // MOV E,M
+			actions[ 0x66 ] = () => { load_r_p(ref h, i8080_get_hl()); }; // MOV H,M
+			actions[ 0x6E ] = () => { load_r_p(ref l, i8080_get_hl()); }; // MOV L,M
+
+			actions[ 0x77 ] = () => { mov_m_r(a); }; // MOV M,A
+			actions[ 0x70 ] = () => { mov_m_r(b); }; // MOV M,B
+			actions[ 0x71 ] = () => { mov_m_r(c); }; // MOV M,C
+			actions[ 0x72 ] = () => { mov_m_r(d); }; // MOV M,D
+			actions[ 0x73 ] = () => { mov_m_r(e); }; // MOV M,E
+			actions[ 0x74 ] = () => { mov_m_r(h); }; // MOV M,H
+			actions[ 0x75 ] = () => { mov_m_r(l); }; // MOV M,L
+
+			actions[ 0x3E ] = () => { mvi_r_d(ref a); }; // MVI A,byte
+			actions[ 0x06 ] = () => { mvi_r_d(ref b); }; // MVI B,byte
+			actions[ 0x0E ] = () => { mvi_r_d(ref c); }; // MVI C,byte
+			actions[ 0x16 ] = () => { mvi_r_d(ref d); }; // MVI D,byte
+			actions[ 0x1E ] = () => { mvi_r_d(ref e); }; // MVI E,byte
+			actions[ 0x26 ] = () => { mvi_r_d(ref h); }; // MVI H,byte
+			actions[ 0x2E ] = () => { mvi_r_d(ref l); }; // MVI L,byte
+			actions[ 0x36 ] = () => { mvi_m_d(); }; // MVI M,byte
+
+			actions[0x0A] = () => { load_r_p(ref a, i8080_get_bc()); }; // LDAX B
+			actions[0x1A] = () => { load_r_p(ref a, i8080_get_de()); }; // LDAX D
+			actions[0x3A] = () => { lda(); }; // LDA word
+
+			actions[ 0x02 ] = () => { stax(i8080_get_bc()); }; // STAX B
+			actions[ 0x12 ] = () => { stax(i8080_get_de()); }; // STAX D
+			actions[ 0x32 ] = () => { sta(); }; // STA word
+
+			actions[ 0x01 ] = () => { lxi(ref b, ref c); }; // LXI B,word
+			actions[ 0x11 ] = () => { lxi(ref d, ref e); }; // LXI D,word
+			actions[ 0x21 ] = () => { lxi(ref h, ref l); }; // LXI H,word
+			actions[ 0x31 ] = () => { lxi_sp(); }; // LXI SP,word
+			actions[ 0x2A ] = () => { lhld(); }; // LHLD
+			actions[ 0x22 ] = () => { shld(); }; // SHLD
+			actions[ 0xF9 ] = () => { sphl(); }; // SPHL
+
+			actions[ 0xEB ] = () => { xchg(); }; // XCHG
+			actions[ 0xE3 ] = () => { xthl(); }; // XTHL
+
+			actions[ 0xC5 ] = () => { push(b, c); }; // PUSH B
+			actions[ 0xD5 ] = () => { push(d, e); }; // PUSH D
+			actions[ 0xE5 ] = () => { push(h, l); }; // PUSH H
+			actions[ 0xF5 ] = () => { push(a, i8080_get_flags()); }; // PUSH PSW
+			actions[ 0xC1 ] = () => { pop(ref b, ref c); }; // POP B
+			actions[ 0xD1 ] = () => { pop(ref d, ref e); }; // POP D
+			actions[ 0xE1 ] = () => { pop(ref h, ref l); }; // POP H
+			actions[ 0xF1 ] = () => { pop(ref a, ref TMP); i8080_set_flags(TMP); }; // POP PSW
+
+			actions[ 0x87 ] = () => { add(a, a, false); }; // ADD A
+			actions[ 0x80 ] = () => { add(a, b, false); }; // ADD B
+			actions[ 0x81 ] = () => { add(a, c, false); }; // ADD C
+			actions[ 0x82 ] = () => { add(a, d, false); }; // ADD D
+			actions[ 0x83 ] = () => { add(a, e, false); }; // ADD E
+			actions[ 0x84 ] = () => { add(a, h, false); }; // ADD H
+			actions[ 0x85 ] = () => { add(a, l, false); }; // ADD L
+			actions[ 0x86 ] = () => { add_m(false); }; // ADD M
+			actions[ 0xC6 ] = () => { adi(false); }; // ADI byte
+
+			actions[ 0x8F ] = () => { add(a, a, flag_c); }; // ADC A
+			actions[ 0x88 ] = () => { add(a, b, flag_c); }; // ADC B
+			actions[ 0x89 ] = () => { add(a, c, flag_c); }; // ADC C
+			actions[ 0x8A ] = () => { add(a, d, flag_c); }; // ADC D
+			actions[ 0x8B ] = () => { add(a, e, flag_c); }; // ADC E
+			actions[ 0x8C ] = () => { add(a, h, flag_c); }; // ADC H
+			actions[ 0x8D ] = () => { add(a, l, flag_c); }; // ADC L
+			actions[ 0x8E ] = () => { add_m(flag_c); }; // ADC M
+			actions[ 0xCE ] = () => { adi(flag_c); }; // ACI byte
+
+			actions[ 0x97 ] = () => { sub(a, a, false); }; // SUB A
+			actions[ 0x90 ] = () => { sub(a, b, false); }; // SUB B
+			actions[ 0x91 ] = () => { sub(a, c, false); }; // SUB C
+			actions[ 0x92 ] = () => { sub(a, d, false); }; // SUB D
+			actions[ 0x93 ] = () => { sub(a, e, false); }; // SUB E
+			actions[ 0x94 ] = () => { sub(a, h, false); }; // SUB H
+			actions[ 0x95 ] = () => { sub(a, l, false); }; // SUB L
+			actions[ 0x96 ] = () => { sub_m(false); }; // SUB M
+			actions[ 0xD6 ] = () => { sbi(false); }; // SUI byte
+
+			actions[ 0x9F ] = () => { sub(a, a, flag_c); }; // SBB A
+			actions[ 0x98 ] = () => { sub(a, b, flag_c); }; // SBB B
+			actions[ 0x99 ] = () => { sub(a, c, flag_c); }; // SBB C
+			actions[ 0x9A ] = () => { sub(a, d, flag_c); }; // SBB D
+			actions[ 0x9B ] = () => { sub(a, e, flag_c); }; // SBB E
+			actions[ 0x9C ] = () => { sub(a, h, flag_c); }; // SBB H
+			actions[ 0x9D ] = () => { sub(a, l, flag_c); }; // SBB L
+			actions[ 0x9E ] = () => { sub_m(flag_c); }; // SBB M
+			actions[ 0xDE ] = () => { sbi(flag_c); }; // SBI byte
+
+			actions[ 0x09 ] = () => { dad(i8080_get_bc()); }; // DAD B
+			actions[ 0x19 ] = () => { dad(i8080_get_de()); }; // DAD D
+			actions[ 0x29 ] = () => { dad(i8080_get_hl()); }; // DAD H
+			actions[ 0x39 ] = () => { dad(sp); }; // DAD SP
+
+			actions[ 0x3C ] = () => { inr(ref a); }; // INR A
+			actions[ 0x04 ] = () => { inr(ref b); }; // INR B
+			actions[ 0x0C ] = () => { inr(ref c); }; // INR C
+			actions[ 0x14 ] = () => { inr(ref d); }; // INR D
+			actions[ 0x1C ] = () => { inr(ref e); }; // INR E
+			actions[ 0x24 ] = () => { inr(ref h); }; // INR H
+			actions[ 0x2C ] = () => { inr(ref l); }; // INR L
+			actions[ 0x34 ] = () => { inr_m(); }; // INR M
+
+			actions[ 0x3D ] = () => { dcr(ref a); }; // DCR A
+			actions[ 0x05 ] = () => { dcr(ref b); }; // DCR B
+			actions[ 0x0D ] = () => { dcr(ref c); }; // DCR C
+			actions[ 0x15 ] = () => { dcr(ref d); }; // DCR D
+			actions[ 0x1D ] = () => { dcr(ref e); }; // DCR E
+			actions[ 0x25 ] = () => { dcr(ref h); }; // DCR H
+			actions[ 0x2D ] = () => { dcr(ref l); }; // DCR L
+			actions[ 0x35 ] = () => { dcr_m(); }; // DCR M
+
+			actions[ 0x03 ] = () => { inx(ref b, ref c); }; // INX B
+			actions[ 0x13 ] = () => { inx(ref d, ref e); }; // INX D
+			actions[ 0x23 ] = () => { inx(ref h, ref l); }; // INX H
+			actions[ 0x33 ] = () => { inx_sp(); }; // INX SP
+
+			actions[ 0x0B ] = () => { dcx(ref b, ref c); }; // DCX B
+			actions[ 0x1B ] = () => { dcx(ref d, ref e); }; // DCX D
+			actions[ 0x2B ] = () => { dcx(ref h, ref l); }; // DCX H
+			actions[ 0x3B ] = () => { dcx_sp(); }; // DCX SP
+
+			actions[ 0x27 ] = () => { daa(); }; // DAA
+			actions[ 0x2F ] = () => { a = (byte)(~a); }; // CMA
+			actions[ 0x37 ] = () => { flag_c = true; }; // STC
+			actions[ 0x3F ] = () => { flag_c = !flag_c; }; // CMC
+
+			actions[ 0x07 ] = () => { rlc(); }; // RLC (rotate left)
+			actions[ 0x0F ] = () => { rrc(); }; // RRC (rotate right)
+			actions[ 0x17 ] = () => { ral(); }; // RAL
+			actions[ 0x1F ] = () => { rar(); }; // RAR
+
+			actions[ 0xA7 ] = () => { ana(a); }; // ANA A
+			actions[ 0xA0 ] = () => { ana(b); }; // ANA B
+			actions[ 0xA1 ] = () => { ana(c); }; // ANA C
+			actions[ 0xA2 ] = () => { ana(d); }; // ANA D
+			actions[ 0xA3 ] = () => { ana(e); }; // ANA E
+			actions[ 0xA4 ] = () => { ana(h); }; // ANA H
+			actions[ 0xA5 ] = () => { ana(l); }; // ANA L
+			actions[ 0xA6 ] = () => { ana_m(); }; // ANA M
+			actions[ 0xE6 ] = () => { ani(); }; // ANI byte
+
+			actions[ 0xAF ] = () => { xra(a); }; // XRA A
+			actions[ 0xA8 ] = () => { xra(b); }; // XRA B
+			actions[ 0xA9 ] = () => { xra(c); }; // XRA C
+			actions[ 0xAA ] = () => { xra(d); }; // XRA D
+			actions[ 0xAB ] = () => { xra(e); }; // XRA E
+			actions[ 0xAC ] = () => { xra(h); }; // XRA H
+			actions[ 0xAD ] = () => { xra(l); }; // XRA L
+			actions[ 0xAE ] = () => { xra_m(); }; // XRA M
+			actions[ 0xEE ] = () => { xri(); }; // XRI byte
+
+			actions[ 0xB7 ] = () => { ora(a); }; // ORA A
+			actions[ 0xB0 ] = () => { ora(b); }; // ORA B
+			actions[ 0xB1 ] = () => { ora(c); }; // ORA C
+			actions[ 0xB2 ] = () => { ora(d); }; // ORA D
+			actions[ 0xB3 ] = () => { ora(e); }; // ORA E
+			actions[ 0xB4 ] = () => { ora(h); }; // ORA H
+			actions[ 0xB5 ] = () => { ora(l); }; // ORA L
+			actions[ 0xB6 ] = () => { ora_m(); }; // ORA M
+			actions[ 0xF6 ] = () => { ori(); }; // ORI byte
+
+			actions[ 0xBF ] = () => { cmp(a); }; // CMP A
+			actions[ 0xB8 ] = () => { cmp(b); }; // CMP B
+			actions[ 0xB9 ] = () => { cmp(c); }; // CMP C
+			actions[ 0xBA ] = () => { cmp(d); }; // CMP D
+			actions[ 0xBB ] = () => { cmp(e); }; // CMP E
+			actions[ 0xBC ] = () => { cmp(h); }; // CMP H
+			actions[ 0xBD ] = () => { cmp(l); }; // CMP L
+			actions[ 0xBE ] = () => { cmp_m(); }; // CMP M
+			actions[ 0xFE ] = () => { cpi(); }; // CPI byte
+
+			actions[ 0xC3 ] = () => { jmp(); }; // JMP
+			actions[ 0xCB ] = () => { jmp(); }; // undocumented JMP
+			actions[ 0xC2 ] = () => { jmp(flag_z == false); }; // JNZ
+			actions[ 0xCA ] = () => { jmp(flag_z == true); }; // JZ
+			actions[ 0xD2 ] = () => { jmp(flag_c == false); }; // JNC
+			actions[ 0xDA ] = () => { jmp(flag_c == true); }; // JC
+			actions[ 0xE2 ] = () => { jmp(flag_p == false); }; // JPO
+			actions[ 0xEA ] = () => { jmp(flag_p == true); }; // JPE
+			actions[ 0xF2 ] = () => { jmp(flag_s == false); }; // JP
+			actions[ 0xFA ] = () => { jmp(flag_s == true); }; // JM
+
+			actions[ 0xE9 ] = () => { pchl(); }; // PCHL
+			actions[ 0xCD ] = () => { call(); }; // CALL
+			actions[ 0xDD ] = () => { call(); }; // undocumented CALL
+			actions[ 0xED ] = () => { call(); }; // undocumented CALL
+			actions[ 0xFD ] = () => { call(); }; // undocumented CALL
+
+			actions[ 0xC4 ] = () => { call(flag_z == false); }; // CNZ
+			actions[ 0xCC ] = () => { call(flag_z == true); }; // CZ
+			actions[ 0xD4 ] = () => { call(flag_c == false); }; // CNC
+			actions[ 0xDC ] = () => { call(flag_c == true); }; // CC
+			actions[ 0xE4 ] = () => { call(flag_p == false); }; // CPO
+			actions[ 0xEC ] = () => { call(flag_p == true); }; // CPE
+			actions[ 0xF4 ] = () => { call(flag_s == false); }; // CP
+			actions[ 0xFC ] = () => { call(flag_s == true); }; // CM
+
+			actions[ 0xC9 ] = () => { ret(); }; // RET
+			actions[ 0xD9 ] = () => { ret(); }; // undocumented RET
+			actions[ 0xC0 ] = () => { ret_cond(flag_z == false); }; // RNZ
+			actions[ 0xC8 ] = () => { ret_cond(flag_z == true); }; // RZ
+			actions[ 0xD0 ] = () => { ret_cond(flag_c == false); }; // RNC
+			actions[ 0xD8 ] = () => { ret_cond(flag_c == true); }; // RC
+			actions[ 0xE0 ] = () => { ret_cond(flag_p == false); }; // RPO
+			actions[ 0xE8 ] = () => { ret_cond(flag_p == true); }; // RPE
+			actions[ 0xF0 ] = () => { ret_cond(flag_s == false); }; // RP
+			actions[ 0xF8 ] = () => { ret_cond(flag_s == true); }; // RM
+
+			actions[ 0xC7 ] = () => { rst(0x00); }; // RST 0
+			actions[ 0xCF ] = () => { rst(0x08); }; // RST 1
+			actions[ 0xD7 ] = () => { rst(0x10); }; // RST 2
+			actions[ 0xDF ] = () => { rst(0x18); }; // RST 3
+			actions[ 0xE7 ] = () => { rst(0x20); }; // RST 4
+			actions[ 0xEF ] = () => { rst(0x28); }; // RST 5
+			actions[ 0xF7 ] = () => { rst(0x30); }; // RST 6
+			actions[ 0xFF ] = () => { rst(0x38); }; // RST 7
+
+			actions[ 0xDB ] = () => { in_d(); }; // IN
+			actions[ 0xD3 ] = () => { out_d(); }; // OUT
+
+			actions[ 0xF3 ] = () => { INTE = false; }; // DI
+			actions[ 0xFB ] = () => { INTE = true; ei_pending = true; }; // EI
+			actions[ 0x76 ] = () => { HLTA = true; }; // HLT
+
+			actions[ 0x00 ] = () => { }; // NOP
+			actions[ 0x08 ] = () => { }; // undocumented NOP
+			actions[ 0x10 ] = () => { }; // undocumented NOP
+			actions[ 0x18 ] = () => { }; // undocumented NOP
+			actions[ 0x20 ] = () => { }; // undocumented NOP
+			actions[ 0x28 ] = () => { }; // undocumented NOP
+			actions[ 0x30 ] = () => { }; // undocumented NOP
+			actions[ 0x38 ] = () => { }; // undocumented NOP
 		}
 	}
 }

@@ -61,7 +61,7 @@ namespace devector
 				for (int byte_horix_idx = 0; byte_horix_idx < BLOCK_BYTES_W; byte_horix_idx++)
 				{
 					int addr = blockIndex * BLOCK_LEN + byte_horix_idx * BLOCK_PXL_SIZE + byte_vert_idx;
-					byte memoryByte = Hardware.memory.get_byte(addr, true);
+					byte memoryByte = Hardware.memory.get_byte(addr, Memory.Access.GLOBAL);
 
 					DrawByte(graphics, memoryByte, x + byte_horix_idx * BITS_IN_BYTE, y + BLOCK_PXL_SIZE - 1 - byte_vert_idx, color_bit_on, color_bit_off);
 				}

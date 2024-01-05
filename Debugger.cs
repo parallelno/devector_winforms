@@ -68,17 +68,11 @@ namespace devector
 			cc_last = 0;
 		}
 
-		// executes one instruction
-		public void step()
-		{
-            cc_last = Hardware.cpu.cc;
-        }
-
 		// define the maximum number of bytes in a command
 		const int CMD_BYTES_MAX = 3;
 
 		// array containing lengths of commands, indexed by opcode
-		readonly byte[] cmd_lens = new byte[0x100] { 1, 3, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1,
+		static readonly byte[] cmd_lens = new byte[0x100] { 1, 3, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1,
 			1, 2, 1, 1, 3, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 3, 3, 1, 1, 1,
 			2, 1, 1, 1, 3, 1, 1, 1, 2, 1, 1, 3, 3, 1, 1, 1, 2, 1, 1, 1, 3, 1, 1, 1, 2,
 			1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
@@ -250,7 +244,7 @@ namespace devector
 						byte db = memory.get_byte(addr);
 						string line_s = get_disasm_db_line(addr, db);
 
-						int global_addr = memory.get_global_addr(addr);
+						int global_addr = memory.get_global_addr(addr, Memory.Access.RAM);
 						var runs = mem_runs[global_addr];
 						var reads = mem_reads[global_addr];
 						var writes = mem_writes[global_addr];
@@ -276,7 +270,7 @@ namespace devector
 				byte data_h = memory.get_byte(addr + 2);
 				string line_s = get_disasm_line(addr, opcode, data_l, data_h);
 
-				int global_addr = memory.get_global_addr(addr);
+				int global_addr = memory.get_global_addr(addr, Memory.Access.RAM);
 				line_s += $"\t{mem_runs[global_addr]},{mem_reads[global_addr]},{mem_writes[global_addr]}";
 
 				if (labels.ContainsKey(addr & 0xffff))

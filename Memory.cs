@@ -18,7 +18,7 @@ namespace devector
 
 		static int ROM_LOAD_ADDR = 0x100;
 
-		public enum Access
+		public enum AddrSpace
 		{
 			RAM, STACK, GLOBAL
 		}
@@ -43,19 +43,28 @@ namespace devector
 			mapping_page_ram = 0;
 		}
 
-		public byte get_byte(int addr, Access acess = Access.RAM)
+		public byte get_byte(int addr, AddrSpace addr_space = AddrSpace.RAM)
 		{
-			addr = get_global_addr((UInt16)(addr & 0xffff), acess);
+			addr = get_global_addr((UInt16)(addr & 0xffff), addr_space);
 			return memory[addr];
 		}
 
-		public void set_byte(int addr, byte value, Access acess = Access.RAM)
+		public void set_byte(int addr, byte value, AddrSpace addr_space = AddrSpace.RAM)
 		{
-			addr = get_global_addr((UInt16)(addr & 0xffff), acess);
+			addr = get_global_addr((UInt16)(addr & 0xffff), addr_space);
 			memory[addr] = value;
 		}
 
-		internal int length()
+        public int get_word(int addr, AddrSpace access = AddrSpace.RAM)
+        {
+            var addr0 = get_global_addr((UInt16)(addr & 0xffff), access);
+            var addr1 = get_global_addr((UInt16)((addr+1) & 0xffff), access);
+			var lb = memory[addr0];
+            var hb = memory[addr1];
+			return hb << 8 | lb;
+        }
+
+        internal int length()
 		{
 			return memory.Length;
 		}
@@ -66,16 +75,16 @@ namespace devector
 		}
 
 		// converts an UInt16 addr to a global addr depending on the ram/stack mapping modes
-		public int get_global_addr(UInt16 addr, Access acess)
+		public int get_global_addr(UInt16 addr, AddrSpace addr_space)
 		{
-			if (acess == Access.STACK)
+			if (addr_space == AddrSpace.STACK)
 			{
 				if (mapping_mode_stack)
 				{
 					return addr + mapping_page_stack * RAM_DISK_PAGE_LEN;
 				}
 			}
-			else if (acess == Access.RAM)
+			else if (addr_space == AddrSpace.RAM)
 			{
 				if (addr < 0x8000 || mapping_mode_ram == 0) return addr;
 

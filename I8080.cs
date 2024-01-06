@@ -18,6 +18,7 @@ using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Windows.Forms;
 using System.Xml.Linq;
+using static devector.Debugger;
 using static devector.Memory;
 using static System.Windows.Forms.AxHost;
 
@@ -53,34 +54,39 @@ namespace devector
 
 		// interruption
 		public bool INTE; // set if an iterrupt enabled
+		public bool IFF; // set by the 50 Hz interruption timer. it is ON until an iterruption call (RST7)
 		public bool HLTA; // indicates that HLT instruction is executed
 		public bool ei_pending; // if set, the interruption call is pending until the next instruction
 		const byte OPCODE_RST7 = 0xff;
+		const byte OPCODE_HLT = 0x76;
 
 		// memory + io interface
-		public delegate byte MemoryReadDelegate(int addr, Memory.Access acess = Memory.Access.RAM);
-		public delegate void MemoryWriteDelegate(int addr, byte value, Access acess = Memory.Access.RAM);
-
+		public delegate byte MemoryReadDelegate(int addr, Memory.AddrSpace addr_space = Memory.AddrSpace.RAM);
+		public delegate void MemoryWriteDelegate(int addr, byte value, AddrSpace addr_space = Memory.AddrSpace.RAM);
 		public delegate byte InputDelegate(byte port);
 		public delegate void OutputDelegate(byte port, byte value);
+		public delegate void DebugMemAccessDelegate(int addr, MemAccess mem_access, AddrSpace addr_space = AddrSpace.RAM);
 
-		MemoryReadDelegate memory_read;
+        MemoryReadDelegate memory_read;
 		MemoryWriteDelegate memory_write;
 		InputDelegate input;
 		OutputDelegate output;
+        DebugMemAccessDelegate debug_mem_access;
 
-		public I8080(
+        public I8080(
 			MemoryReadDelegate _memory_read,
-			MemoryWriteDelegate _memory_set,
+			MemoryWriteDelegate _memory_write,
 			InputDelegate _input,
-			OutputDelegate _output)
+			OutputDelegate _output,
+			DebugMemAccessDelegate _debug_mem_access)
 		{
-			memory_read = _memory_read;
-			memory_write = _memory_set;
+            memory_read = _memory_read;
+            memory_write = _memory_write;
 			input = _input;
 			output = _output;
+			debug_mem_access = _debug_mem_access;
 
-			unused_flaf_1 = true;
+            unused_flaf_1 = true;
 			unused_flaf_3 = false;
 			unused_flaf_5 = false;
 
@@ -103,36 +109,40 @@ namespace devector
 
 		public void execute_machine_cycle(bool INTA)
 		{
-			if (machine_cycle == 0)
+			IFF |= INTA;
+
+            if (machine_cycle == 0)
 			{
 				// interrupt processing
-				if (INTE && INTA && !ei_pending)
+				if (INTE && IFF && !ei_pending)
 				{
 					INTE = false;
+					IFF = false;
 					HLTA = false;
 					instruction_register = OPCODE_RST7;
 				}
 				// normal instruction execution
-				else if (HLTA)
-				{
-					pc--; // move the program counter back if the last instruction was HLT
-				}
 				else
 				{
+					if (instruction_register == OPCODE_HLT)
+					{
+						pc--; // move the program counter back if the last instruction was HLT
+					}
+
 					ei_pending = false;
-					instruction_register = read_byte_move_pc();
+					instruction_register = read_instr_move_pc();
 				}
 			}
 
-			machine_cycle = decode(instruction_register, machine_cycle);
+			decode();
 			cc += MACHINE_CC;
 		}
 
-		int decode(byte opcode, int m_cycle)
+		void decode()
 		{
-			actions[opcode]();
-			m_cycle++;
-			return m_cycle % M_CYCLES[opcode];
+			actions[instruction_register]();
+            machine_cycle++;
+			machine_cycle %= M_CYCLES[instruction_register];
 		}
 
 		// an instruction execution time in macine cycles
@@ -146,7 +156,7 @@ namespace devector
 			2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, // 4
 			2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, // 5
 			2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, // 6
-			2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, // 7
+			2, 2, 2, 2, 2, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, // 7
 
 			1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 2, 1, // 8
 			1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 2, 1, // 9
@@ -159,23 +169,36 @@ namespace devector
 			4, 3, 3, 1, 6, 4, 2, 4, 4, 2, 3, 1, 6, 6, 2, 4  // F
 		};
 
-		//===============================================================================
-		//
-		// memory helpers
-		//
-		//===============================================================================
-		
-		byte read_byte_move_pc(Memory.Access access = Memory.Access.RAM)
-		{
-			var result = memory_read(pc, access);
-			pc++;
-			return result;
-		}
+        //===============================================================================
+        //
+        // memory helpers
+        //
+        //===============================================================================
 
-		UInt16 read_word_move_pc(Memory.Access access = Memory.Access.RAM)
+        byte read_instr_move_pc()
+        {
+            debug_mem_access(pc, Debugger.MemAccess.RUN);
+            byte op_code = memory_read(pc, AddrSpace.RAM);
+            pc++;
+			return op_code;
+        }
+
+        byte read_byte(int addr, AddrSpace addr_space = AddrSpace.RAM)
+        {
+            debug_mem_access(addr, Debugger.MemAccess.READ, addr_space);
+            return memory_read(addr, addr_space);
+        }
+
+        void write_byte(int addr, byte value, AddrSpace addr_space = AddrSpace.RAM)
+        {
+            memory_write(addr, value, addr_space);
+            debug_mem_access(addr, Debugger.MemAccess.WRITE, addr_space);
+        }
+
+        byte read_byte_move_pc(Memory.AddrSpace addr_space = Memory.AddrSpace.RAM)
 		{
-			UInt16 result = (UInt16)(memory_read((UInt16)(pc + 1), access) << 8 | memory_read(pc, access));
-			pc += 2;
+			var result = read_byte(pc, addr_space);
+            pc++;
 			return result;
 		}
 
@@ -323,7 +346,6 @@ namespace devector
 			a = (byte)(a >> 1);
 			a |= (byte)(cy ? 1 << 7 : 0);
 		}
-		#endregion
 
 		void mov_r_r(ref byte ddd, byte sss)
 		{
@@ -341,7 +363,7 @@ namespace devector
 		{
 			if (machine_cycle == 1)
 			{
-				ddd = memory_read(addr);
+				ddd = read_byte(addr);
 			}
 		}
 
@@ -353,7 +375,7 @@ namespace devector
 			}
 			else
 			{
-				memory_write(i8080_get_hl(), TMP);
+				write_byte(i8080_get_hl(), TMP);
 			}
 		}
 
@@ -373,7 +395,7 @@ namespace devector
 			}
 			else if (machine_cycle == 2)
 			{
-				memory_write(i8080_get_hl(), TMP);
+				write_byte(i8080_get_hl(), TMP);
 			}
 		}
 
@@ -389,7 +411,7 @@ namespace devector
 			}
 			else if (machine_cycle == 3)
 			{
-				a = memory_read((UInt16)(W << 8 | Z));
+				a = read_byte((UInt16)(W << 8 | Z));
 			}
 		}
 
@@ -405,7 +427,7 @@ namespace devector
 			}
 			else if (machine_cycle == 3)
 			{
-				memory_write((UInt16)(W << 8 | Z), a);
+				write_byte((UInt16)(W << 8 | Z), a);
 			}
 		}
 
@@ -413,7 +435,7 @@ namespace devector
 		{
 			if (machine_cycle == 1)
 			{
-				memory_write(addr, a);
+				write_byte(addr, a);
 			}
 		}
 
@@ -455,13 +477,13 @@ namespace devector
 			}
 			else if (machine_cycle == 3)
 			{
-				l = memory_read((UInt16)(W << 8 | Z));
+				l = read_byte((UInt16)(W << 8 | Z));
 				Z++;
 				W += (byte)(Z == 0 ? 1 : 0);
 			}
 			else if (machine_cycle == 4)
 			{
-				h = memory_read((UInt16)(W << 8 | Z));
+				h = read_byte((UInt16)(W << 8 | Z));
 			}
 		}
 
@@ -477,13 +499,13 @@ namespace devector
 			}
 			else if (machine_cycle == 3)
 			{
-				memory_write((UInt16)(W << 8 | Z), l);
+				write_byte((UInt16)(W << 8 | Z), l);
 				Z++;
 				W += (byte)(Z == 0 ? 1 : 0);
 			}
 			else if (machine_cycle == 4)
 			{
-				memory_write((UInt16)(W << 8 | Z), h);
+				write_byte((UInt16)(W << 8 | Z), h);
 			}
 		}
 
@@ -510,19 +532,19 @@ namespace devector
 		{
 			if (machine_cycle == 1)
 			{
-				Z = memory_read(sp, Memory.Access.STACK);
+				Z = read_byte(sp, Memory.AddrSpace.STACK);
 			}
 			else if (machine_cycle == 2)
 			{
-				W = memory_read(sp + 1, Memory.Access.STACK);
+				W = read_byte(sp + 1, Memory.AddrSpace.STACK);
 			}
 			else if (machine_cycle == 3)
 			{
-				memory_write(sp, l, Memory.Access.STACK);
+				write_byte(sp, l, Memory.AddrSpace.STACK);
 			}
 			else if (machine_cycle == 4)
 			{
-				memory_write(sp, h, Memory.Access.STACK);
+				write_byte(sp, h, Memory.AddrSpace.STACK);
 			}
 			else if (machine_cycle == 5)
 			{
@@ -539,7 +561,7 @@ namespace devector
 			}
 			else if (machine_cycle == 1)
 			{
-				memory_write(sp, hb, Memory.Access.STACK);
+				write_byte(sp, hb, Memory.AddrSpace.STACK);
 			}
 			else if (machine_cycle == 2)
 			{
@@ -547,7 +569,7 @@ namespace devector
 			}
 			else if (machine_cycle == 3)
 			{
-				memory_write(sp, lb, Memory.Access.STACK);
+				write_byte(sp, lb, Memory.AddrSpace.STACK);
 			}
 		}
 
@@ -555,12 +577,12 @@ namespace devector
 		{
 			if (machine_cycle == 1)
 			{
-				lb = memory_read(sp, Memory.Access.STACK);
+				lb = read_byte(sp, Memory.AddrSpace.STACK);
 				sp++;
 			}
 			else if (machine_cycle == 2)
 			{
-				hb = memory_read(sp, Memory.Access.STACK);
+				hb = read_byte(sp, Memory.AddrSpace.STACK);
 				sp++;
 			}
 		}
@@ -592,7 +614,7 @@ namespace devector
 			}
 			else if (machine_cycle == 1)
 			{
-				TMP = memory_read(i8080_get_hl());
+				TMP = read_byte(i8080_get_hl());
 				add(ACT, TMP, _cy);
 			}
 		}
@@ -618,7 +640,7 @@ namespace devector
 			}
 			else if (machine_cycle == 1)
 			{
-				TMP = memory_read(i8080_get_hl());
+				TMP = read_byte(i8080_get_hl());
 				sub(ACT, TMP, _cy);
 			}
 		}
@@ -652,7 +674,7 @@ namespace devector
 				TMP = h;
 				var result = ACT + TMP + (flag_c ? 1 : 0);
 				flag_c = (result >> 8) == 1;
-				l = (byte)(result);
+				h = (byte)(result);
 			}
 		}
 
@@ -675,14 +697,14 @@ namespace devector
 		{
 			if (machine_cycle == 1)
 			{
-				TMP = memory_read(i8080_get_hl());
+				TMP = read_byte(i8080_get_hl());
 				TMP++;
 				flag_ac = (TMP & 0xF) == 0;
 				set_z_s_p(TMP);
 			}
 			else if (machine_cycle == 2)
 			{
-				memory_write(i8080_get_hl(), TMP);
+				write_byte(i8080_get_hl(), TMP);
 			}
 		}
 
@@ -705,14 +727,14 @@ namespace devector
 		{
 			if (machine_cycle == 1)
 			{
-				TMP = memory_read(i8080_get_hl());
+				TMP = read_byte(i8080_get_hl());
 				TMP--;
 				flag_ac = !((TMP & 0xF) == 0xF);
 				set_z_s_p(TMP);
 			}
 			else if (machine_cycle == 2)
 			{
-				memory_write(i8080_get_hl(), TMP);
+				write_byte(i8080_get_hl(), TMP);
 			}
 		}
 
@@ -752,8 +774,8 @@ namespace devector
 			}
 			else if (machine_cycle == 1)
 			{
-				h = W;
-				l = Z;
+				hb = W;
+				lb = Z;
 			}
 		}
 
@@ -814,7 +836,7 @@ namespace devector
 			}
 			else if (machine_cycle == 1)
 			{
-				TMP = memory_read(i8080_get_hl());
+				TMP = read_byte(i8080_get_hl());
 				a = (byte)(ACT & TMP);
 				flag_c = false;
 				flag_ac = ((ACT | TMP) & 0x08) != 0;
@@ -858,7 +880,7 @@ namespace devector
 			}
 			else if (machine_cycle == 1)
 			{
-				TMP = memory_read(i8080_get_hl());
+				TMP = read_byte(i8080_get_hl());
 				a = (byte)(ACT ^ TMP);
 				flag_c = false;
 				flag_ac = false;
@@ -902,7 +924,7 @@ namespace devector
 			}
 			else if (machine_cycle == 1)
 			{
-				TMP = memory_read(i8080_get_hl());
+				TMP = read_byte(i8080_get_hl());
 				a = (byte)(ACT | TMP);
 				flag_c = false;
 				flag_ac = false;
@@ -945,7 +967,7 @@ namespace devector
 			}
 			else if (machine_cycle == 1)
 			{
-				TMP = memory_read(i8080_get_hl());
+				TMP = read_byte(i8080_get_hl());
 				UInt16 result = (UInt16)(ACT - TMP);
 				flag_c = result >> 8 == 1;
 				flag_ac = (~(ACT ^ result ^ TMP) & 0x10) == 0x10;
@@ -978,9 +1000,6 @@ namespace devector
 			else if (machine_cycle == 2)
 			{
 				W = read_byte_move_pc();
-			}
-			else if (machine_cycle == 3)
-			{
 				if (condition)
 				{
 					pc = (UInt16)(W << 8 | Z);
@@ -1016,7 +1035,7 @@ namespace devector
 			}
 			else if (machine_cycle == 3)
 			{
-				memory_write(sp, (byte)(pc >> 8), Memory.Access.STACK);
+				write_byte(sp, (byte)(pc >> 8), Memory.AddrSpace.STACK);
 				if (condition)
 				{
 					sp--;
@@ -1028,7 +1047,7 @@ namespace devector
 			}
 			else if (machine_cycle == 4)
 			{
-				memory_write(sp, (byte)(pc & 0xff), Memory.Access.STACK);
+				write_byte(sp, (byte)(pc & 0xff), Memory.AddrSpace.STACK);
 			}
 			else if (machine_cycle == 5)
 			{
@@ -1045,14 +1064,14 @@ namespace devector
 			}
 			else if (machine_cycle == 1)
 			{
-				memory_write(sp, (byte)(pc >> 8), Memory.Access.STACK);
+				write_byte(sp, (byte)(pc >> 8), Memory.AddrSpace.STACK);
 				sp--;
 			}
 			else if (machine_cycle == 2)
 			{
 				W = 0;
 				Z = addr;
-                memory_write(sp, (byte)(pc & 0xff), Memory.Access.STACK);
+				write_byte(sp, (byte)(pc & 0xff), Memory.AddrSpace.STACK);
 			}
 			else if (machine_cycle == 3)
 			{
@@ -1065,12 +1084,12 @@ namespace devector
 		{
 			if (machine_cycle == 1)
 			{
-				Z = memory_read(sp, Memory.Access.STACK);
+				Z = read_byte(sp, Memory.AddrSpace.STACK);
 				sp++;
 			}
 			else if (machine_cycle == 2)
 			{
-				W = memory_read(sp, Memory.Access.STACK);
+				W = read_byte(sp, Memory.AddrSpace.STACK);
 				sp++;
 				pc = (UInt16)(W << 8 | Z);
 			}
@@ -1081,40 +1100,41 @@ namespace devector
 		{
 			if (machine_cycle == 1)
 			{
-				if (condition) machine_cycle = 3;
+				if (!condition) machine_cycle = 3;
 			}
 			else if (machine_cycle == 2)
 			{
-				Z = memory_read(sp, Memory.Access.STACK);
+				Z = read_byte(sp, Memory.AddrSpace.STACK);
 				sp++;
 			}
 			else if (machine_cycle == 3)
 			{
-				W = memory_read(sp, Memory.Access.STACK);
+				W = read_byte(sp, Memory.AddrSpace.STACK);
 				sp++;
 				pc = (UInt16)(W << 8 | Z);
 			}
 		}
 
-        void in_d()
-        {
-            if (machine_cycle == 1)
-            {
+		void in_d()
+		{
+			if (machine_cycle == 1)
+			{
 				W = 0;
 				Z = read_byte_move_pc();
-                a = input(Z);
-            }
-        }
+				a = input(Z);
+			}
+		}
 
-        void out_d()
-        {
-            if (machine_cycle == 1)
-            {
-                W = 0;
-                Z = read_byte_move_pc();
-                output(Z, a);
-            }
-        }
+		void out_d()
+		{
+			if (machine_cycle == 1)
+			{
+				W = 0;
+				Z = read_byte_move_pc();
+				output(Z, a);
+			}
+		}
+        #endregion
 
         private void incode_actions()
 		{

@@ -75,23 +75,23 @@
             this.textbox_cc = new System.Windows.Forms.TextBox();
             this.textbox_last_run = new System.Windows.Forms.TextBox();
             this.stack_group = new System.Windows.Forms.GroupBox();
-            this.label11 = new System.Windows.Forms.Label();
-            this.label10 = new System.Windows.Forms.Label();
-            this.label9 = new System.Windows.Forms.Label();
-            this.label8 = new System.Windows.Forms.Label();
-            this.label7 = new System.Windows.Forms.Label();
-            this.label6 = new System.Windows.Forms.Label();
-            this.textBox16 = new System.Windows.Forms.TextBox();
-            this.textBox15 = new System.Windows.Forms.TextBox();
-            this.textBox5 = new System.Windows.Forms.TextBox();
-            this.textBox11 = new System.Windows.Forms.TextBox();
-            this.textBox12 = new System.Windows.Forms.TextBox();
-            this.textBox13 = new System.Windows.Forms.TextBox();
-            this.textBox14 = new System.Windows.Forms.TextBox();
+            this.label_sp_p6 = new System.Windows.Forms.Label();
+            this.label_sp_p4 = new System.Windows.Forms.Label();
+            this.label_sp_p2 = new System.Windows.Forms.Label();
+            this.label_sp_n2 = new System.Windows.Forms.Label();
+            this.label_sp_n4 = new System.Windows.Forms.Label();
+            this.label_sp_n6 = new System.Windows.Forms.Label();
+            this.textbox_sp_p6 = new System.Windows.Forms.TextBox();
+            this.textbox_sp_p4 = new System.Windows.Forms.TextBox();
+            this.textbox_sp_p2 = new System.Windows.Forms.TextBox();
+            this.textbox_sp_0 = new System.Windows.Forms.TextBox();
+            this.textbox_sp_n2 = new System.Windows.Forms.TextBox();
+            this.textbox_sp_n6 = new System.Windows.Forms.TextBox();
+            this.textbox_sp_n4 = new System.Windows.Forms.TextBox();
             this.label1 = new System.Windows.Forms.Label();
             this.flags_group = new System.Windows.Forms.GroupBox();
             this.label12 = new System.Windows.Forms.Label();
-            this.textbox_iff = new System.Windows.Forms.TextBox();
+            this.textbox_inte = new System.Windows.Forms.TextBox();
             this.textbox_acf = new System.Windows.Forms.TextBox();
             this.textbox_sf = new System.Windows.Forms.TextBox();
             this.textbox_pf = new System.Windows.Forms.TextBox();
@@ -120,6 +120,11 @@
             this.tools = new System.Windows.Forms.ToolStrip();
             this.toolStripButton1 = new System.Windows.Forms.ToolStripButton();
             this.toolStripButton2 = new System.Windows.Forms.ToolStripButton();
+            this.toolStripButton3 = new System.Windows.Forms.ToolStripButton();
+            this.label2 = new System.Windows.Forms.Label();
+            this.textbox_iff = new System.Windows.Forms.TextBox();
+            this.label3 = new System.Windows.Forms.Label();
+            this.textbox_hlta = new System.Windows.Forms.TextBox();
             ((System.ComponentModel.ISupportInitialize)(this.main_panel)).BeginInit();
             this.main_panel.Panel1.SuspendLayout();
             this.main_panel.Panel2.SuspendLayout();
@@ -700,194 +705,188 @@
             // 
             // stack_group
             // 
-            this.stack_group.Controls.Add(this.label11);
-            this.stack_group.Controls.Add(this.label10);
-            this.stack_group.Controls.Add(this.label9);
-            this.stack_group.Controls.Add(this.label8);
-            this.stack_group.Controls.Add(this.label7);
-            this.stack_group.Controls.Add(this.label6);
-            this.stack_group.Controls.Add(this.textBox16);
-            this.stack_group.Controls.Add(this.textBox15);
-            this.stack_group.Controls.Add(this.textBox5);
-            this.stack_group.Controls.Add(this.textBox11);
-            this.stack_group.Controls.Add(this.textBox12);
-            this.stack_group.Controls.Add(this.textBox13);
-            this.stack_group.Controls.Add(this.textBox14);
+            this.stack_group.Controls.Add(this.label_sp_p6);
+            this.stack_group.Controls.Add(this.label_sp_p4);
+            this.stack_group.Controls.Add(this.label_sp_p2);
+            this.stack_group.Controls.Add(this.label_sp_n2);
+            this.stack_group.Controls.Add(this.label_sp_n4);
+            this.stack_group.Controls.Add(this.label_sp_n6);
+            this.stack_group.Controls.Add(this.textbox_sp_p6);
+            this.stack_group.Controls.Add(this.textbox_sp_p4);
+            this.stack_group.Controls.Add(this.textbox_sp_p2);
+            this.stack_group.Controls.Add(this.textbox_sp_0);
+            this.stack_group.Controls.Add(this.textbox_sp_n2);
+            this.stack_group.Controls.Add(this.textbox_sp_n6);
+            this.stack_group.Controls.Add(this.textbox_sp_n4);
             this.stack_group.Controls.Add(this.label1);
             this.stack_group.Dock = System.Windows.Forms.DockStyle.Left;
             this.stack_group.ForeColor = System.Drawing.SystemColors.ControlDarkDark;
-            this.stack_group.Location = new System.Drawing.Point(130, 0);
+            this.stack_group.Location = new System.Drawing.Point(139, 0);
             this.stack_group.Name = "stack_group";
-            this.stack_group.Size = new System.Drawing.Size(98, 181);
+            this.stack_group.Size = new System.Drawing.Size(89, 181);
             this.stack_group.TabIndex = 13;
             this.stack_group.TabStop = false;
             this.stack_group.Text = "Stack";
             // 
-            // label11
+            // label_sp_p6
             // 
-            this.label11.AutoSize = true;
-            this.label11.Font = new System.Drawing.Font("MS Gothic", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label11.ForeColor = System.Drawing.SystemColors.ControlText;
-            this.label11.Location = new System.Drawing.Point(6, 135);
-            this.label11.Name = "label11";
-            this.label11.RightToLeft = System.Windows.Forms.RightToLeft.Yes;
-            this.label11.Size = new System.Drawing.Size(35, 13);
-            this.label11.TabIndex = 18;
-            this.label11.Text = "EFAD";
+            this.label_sp_p6.AutoSize = true;
+            this.label_sp_p6.Font = new System.Drawing.Font("MS Gothic", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label_sp_p6.ForeColor = System.Drawing.SystemColors.ControlText;
+            this.label_sp_p6.Location = new System.Drawing.Point(18, 135);
+            this.label_sp_p6.Name = "label_sp_p6";
+            this.label_sp_p6.Size = new System.Drawing.Size(21, 13);
+            this.label_sp_p6.TabIndex = 18;
+            this.label_sp_p6.Text = "+6";
             // 
-            // label10
+            // label_sp_p4
             // 
-            this.label10.AutoSize = true;
-            this.label10.Font = new System.Drawing.Font("MS Gothic", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label10.ForeColor = System.Drawing.SystemColors.ControlText;
-            this.label10.Location = new System.Drawing.Point(6, 116);
-            this.label10.Name = "label10";
-            this.label10.RightToLeft = System.Windows.Forms.RightToLeft.Yes;
-            this.label10.Size = new System.Drawing.Size(35, 13);
-            this.label10.TabIndex = 17;
-            this.label10.Text = "EFAD";
+            this.label_sp_p4.AutoSize = true;
+            this.label_sp_p4.Font = new System.Drawing.Font("MS Gothic", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label_sp_p4.ForeColor = System.Drawing.SystemColors.ControlText;
+            this.label_sp_p4.Location = new System.Drawing.Point(18, 116);
+            this.label_sp_p4.Name = "label_sp_p4";
+            this.label_sp_p4.Size = new System.Drawing.Size(21, 13);
+            this.label_sp_p4.TabIndex = 17;
+            this.label_sp_p4.Text = "+4";
             // 
-            // label9
+            // label_sp_p2
             // 
-            this.label9.AutoSize = true;
-            this.label9.Font = new System.Drawing.Font("MS Gothic", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label9.ForeColor = System.Drawing.SystemColors.ControlText;
-            this.label9.Location = new System.Drawing.Point(6, 97);
-            this.label9.Name = "label9";
-            this.label9.RightToLeft = System.Windows.Forms.RightToLeft.Yes;
-            this.label9.Size = new System.Drawing.Size(35, 13);
-            this.label9.TabIndex = 16;
-            this.label9.Text = "EFAD";
+            this.label_sp_p2.AutoSize = true;
+            this.label_sp_p2.Font = new System.Drawing.Font("MS Gothic", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label_sp_p2.ForeColor = System.Drawing.SystemColors.ControlText;
+            this.label_sp_p2.Location = new System.Drawing.Point(18, 97);
+            this.label_sp_p2.Name = "label_sp_p2";
+            this.label_sp_p2.Size = new System.Drawing.Size(21, 13);
+            this.label_sp_p2.TabIndex = 16;
+            this.label_sp_p2.Text = "+2";
             // 
-            // label8
+            // label_sp_n2
             // 
-            this.label8.AutoSize = true;
-            this.label8.Font = new System.Drawing.Font("MS Gothic", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label8.ForeColor = System.Drawing.SystemColors.ControlText;
-            this.label8.Location = new System.Drawing.Point(6, 59);
-            this.label8.Name = "label8";
-            this.label8.RightToLeft = System.Windows.Forms.RightToLeft.Yes;
-            this.label8.Size = new System.Drawing.Size(35, 13);
-            this.label8.TabIndex = 15;
-            this.label8.Text = "EFAD";
+            this.label_sp_n2.AutoSize = true;
+            this.label_sp_n2.Font = new System.Drawing.Font("MS Gothic", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label_sp_n2.ForeColor = System.Drawing.SystemColors.ControlText;
+            this.label_sp_n2.Location = new System.Drawing.Point(18, 59);
+            this.label_sp_n2.Name = "label_sp_n2";
+            this.label_sp_n2.Size = new System.Drawing.Size(21, 13);
+            this.label_sp_n2.TabIndex = 15;
+            this.label_sp_n2.Text = "-2";
             // 
-            // label7
+            // label_sp_n4
             // 
-            this.label7.AutoSize = true;
-            this.label7.Font = new System.Drawing.Font("MS Gothic", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label7.ForeColor = System.Drawing.SystemColors.ControlText;
-            this.label7.Location = new System.Drawing.Point(6, 40);
-            this.label7.Name = "label7";
-            this.label7.RightToLeft = System.Windows.Forms.RightToLeft.Yes;
-            this.label7.Size = new System.Drawing.Size(35, 13);
-            this.label7.TabIndex = 14;
-            this.label7.Text = "EFAD";
+            this.label_sp_n4.AutoSize = true;
+            this.label_sp_n4.Font = new System.Drawing.Font("MS Gothic", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label_sp_n4.ForeColor = System.Drawing.SystemColors.ControlText;
+            this.label_sp_n4.Location = new System.Drawing.Point(18, 40);
+            this.label_sp_n4.Name = "label_sp_n4";
+            this.label_sp_n4.Size = new System.Drawing.Size(21, 13);
+            this.label_sp_n4.TabIndex = 14;
+            this.label_sp_n4.Text = "-4";
             // 
-            // label6
+            // label_sp_n6
             // 
-            this.label6.AutoSize = true;
-            this.label6.Font = new System.Drawing.Font("MS Gothic", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label6.ForeColor = System.Drawing.SystemColors.ControlText;
-            this.label6.Location = new System.Drawing.Point(6, 21);
-            this.label6.Name = "label6";
-            this.label6.RightToLeft = System.Windows.Forms.RightToLeft.Yes;
-            this.label6.Size = new System.Drawing.Size(35, 13);
-            this.label6.TabIndex = 13;
-            this.label6.Text = "EFAD";
+            this.label_sp_n6.AutoSize = true;
+            this.label_sp_n6.Font = new System.Drawing.Font("MS Gothic", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label_sp_n6.ForeColor = System.Drawing.SystemColors.ControlText;
+            this.label_sp_n6.Location = new System.Drawing.Point(18, 21);
+            this.label_sp_n6.Name = "label_sp_n6";
+            this.label_sp_n6.Size = new System.Drawing.Size(21, 13);
+            this.label_sp_n6.TabIndex = 13;
+            this.label_sp_n6.Text = "-6";
             // 
-            // textBox16
+            // textbox_sp_p6
             // 
-            this.textBox16.BackColor = System.Drawing.Color.LightGray;
-            this.textBox16.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            this.textBox16.Font = new System.Drawing.Font("MS Gothic", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.textBox16.Location = new System.Drawing.Point(39, 135);
-            this.textBox16.Name = "textBox16";
-            this.textBox16.ReadOnly = true;
-            this.textBox16.Size = new System.Drawing.Size(38, 13);
-            this.textBox16.TabIndex = 12;
-            this.textBox16.Text = "ABCD";
-            this.textBox16.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
+            this.textbox_sp_p6.BackColor = System.Drawing.Color.LightGray;
+            this.textbox_sp_p6.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            this.textbox_sp_p6.Font = new System.Drawing.Font("MS Gothic", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.textbox_sp_p6.Location = new System.Drawing.Point(40, 135);
+            this.textbox_sp_p6.Name = "textbox_sp_p6";
+            this.textbox_sp_p6.ReadOnly = true;
+            this.textbox_sp_p6.Size = new System.Drawing.Size(38, 13);
+            this.textbox_sp_p6.TabIndex = 12;
+            this.textbox_sp_p6.Text = "ABCD";
+            this.textbox_sp_p6.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
             // 
-            // textBox15
+            // textbox_sp_p4
             // 
-            this.textBox15.BackColor = System.Drawing.Color.LightGray;
-            this.textBox15.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            this.textBox15.Font = new System.Drawing.Font("MS Gothic", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.textBox15.Location = new System.Drawing.Point(39, 116);
-            this.textBox15.Name = "textBox15";
-            this.textBox15.ReadOnly = true;
-            this.textBox15.Size = new System.Drawing.Size(38, 13);
-            this.textBox15.TabIndex = 11;
-            this.textBox15.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
+            this.textbox_sp_p4.BackColor = System.Drawing.Color.LightGray;
+            this.textbox_sp_p4.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            this.textbox_sp_p4.Font = new System.Drawing.Font("MS Gothic", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.textbox_sp_p4.Location = new System.Drawing.Point(40, 116);
+            this.textbox_sp_p4.Name = "textbox_sp_p4";
+            this.textbox_sp_p4.ReadOnly = true;
+            this.textbox_sp_p4.Size = new System.Drawing.Size(38, 13);
+            this.textbox_sp_p4.TabIndex = 11;
+            this.textbox_sp_p4.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
             // 
-            // textBox5
+            // textbox_sp_p2
             // 
-            this.textBox5.BackColor = System.Drawing.Color.LightGray;
-            this.textBox5.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            this.textBox5.Font = new System.Drawing.Font("MS Gothic", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.textBox5.Location = new System.Drawing.Point(39, 97);
-            this.textBox5.Name = "textBox5";
-            this.textBox5.ReadOnly = true;
-            this.textBox5.Size = new System.Drawing.Size(38, 13);
-            this.textBox5.TabIndex = 10;
-            this.textBox5.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
+            this.textbox_sp_p2.BackColor = System.Drawing.Color.LightGray;
+            this.textbox_sp_p2.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            this.textbox_sp_p2.Font = new System.Drawing.Font("MS Gothic", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.textbox_sp_p2.Location = new System.Drawing.Point(40, 97);
+            this.textbox_sp_p2.Name = "textbox_sp_p2";
+            this.textbox_sp_p2.ReadOnly = true;
+            this.textbox_sp_p2.Size = new System.Drawing.Size(38, 13);
+            this.textbox_sp_p2.TabIndex = 10;
+            this.textbox_sp_p2.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
             // 
-            // textBox11
+            // textbox_sp_0
             // 
-            this.textBox11.BackColor = System.Drawing.Color.LightGray;
-            this.textBox11.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            this.textBox11.Font = new System.Drawing.Font("MS Gothic", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.textBox11.Location = new System.Drawing.Point(39, 78);
-            this.textBox11.Name = "textBox11";
-            this.textBox11.ReadOnly = true;
-            this.textBox11.Size = new System.Drawing.Size(38, 13);
-            this.textBox11.TabIndex = 9;
-            this.textBox11.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
+            this.textbox_sp_0.BackColor = System.Drawing.Color.LightGray;
+            this.textbox_sp_0.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            this.textbox_sp_0.Font = new System.Drawing.Font("MS Gothic", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.textbox_sp_0.Location = new System.Drawing.Point(40, 78);
+            this.textbox_sp_0.Name = "textbox_sp_0";
+            this.textbox_sp_0.ReadOnly = true;
+            this.textbox_sp_0.Size = new System.Drawing.Size(38, 13);
+            this.textbox_sp_0.TabIndex = 9;
+            this.textbox_sp_0.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
             // 
-            // textBox12
+            // textbox_sp_n2
             // 
-            this.textBox12.BackColor = System.Drawing.Color.LightGray;
-            this.textBox12.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            this.textBox12.Font = new System.Drawing.Font("MS Gothic", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.textBox12.Location = new System.Drawing.Point(39, 59);
-            this.textBox12.Name = "textBox12";
-            this.textBox12.ReadOnly = true;
-            this.textBox12.Size = new System.Drawing.Size(38, 13);
-            this.textBox12.TabIndex = 8;
-            this.textBox12.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
+            this.textbox_sp_n2.BackColor = System.Drawing.Color.LightGray;
+            this.textbox_sp_n2.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            this.textbox_sp_n2.Font = new System.Drawing.Font("MS Gothic", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.textbox_sp_n2.Location = new System.Drawing.Point(40, 59);
+            this.textbox_sp_n2.Name = "textbox_sp_n2";
+            this.textbox_sp_n2.ReadOnly = true;
+            this.textbox_sp_n2.Size = new System.Drawing.Size(38, 13);
+            this.textbox_sp_n2.TabIndex = 8;
+            this.textbox_sp_n2.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
             // 
-            // textBox13
+            // textbox_sp_n6
             // 
-            this.textBox13.BackColor = System.Drawing.Color.LightGray;
-            this.textBox13.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            this.textBox13.Font = new System.Drawing.Font("MS Gothic", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.textBox13.Location = new System.Drawing.Point(39, 21);
-            this.textBox13.Name = "textBox13";
-            this.textBox13.ReadOnly = true;
-            this.textBox13.Size = new System.Drawing.Size(38, 13);
-            this.textBox13.TabIndex = 6;
-            this.textBox13.Text = "DDFF";
-            this.textBox13.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
+            this.textbox_sp_n6.BackColor = System.Drawing.Color.LightGray;
+            this.textbox_sp_n6.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            this.textbox_sp_n6.Font = new System.Drawing.Font("MS Gothic", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.textbox_sp_n6.Location = new System.Drawing.Point(40, 21);
+            this.textbox_sp_n6.Name = "textbox_sp_n6";
+            this.textbox_sp_n6.ReadOnly = true;
+            this.textbox_sp_n6.Size = new System.Drawing.Size(38, 13);
+            this.textbox_sp_n6.TabIndex = 6;
+            this.textbox_sp_n6.Text = "DDFF";
+            this.textbox_sp_n6.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
             // 
-            // textBox14
+            // textbox_sp_n4
             // 
-            this.textBox14.BackColor = System.Drawing.Color.LightGray;
-            this.textBox14.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            this.textBox14.Font = new System.Drawing.Font("MS Gothic", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.textBox14.Location = new System.Drawing.Point(39, 40);
-            this.textBox14.Name = "textBox14";
-            this.textBox14.ReadOnly = true;
-            this.textBox14.Size = new System.Drawing.Size(38, 13);
-            this.textBox14.TabIndex = 7;
-            this.textBox14.Text = "1010";
-            this.textBox14.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
+            this.textbox_sp_n4.BackColor = System.Drawing.Color.LightGray;
+            this.textbox_sp_n4.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            this.textbox_sp_n4.Font = new System.Drawing.Font("MS Gothic", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.textbox_sp_n4.Location = new System.Drawing.Point(40, 40);
+            this.textbox_sp_n4.Name = "textbox_sp_n4";
+            this.textbox_sp_n4.ReadOnly = true;
+            this.textbox_sp_n4.Size = new System.Drawing.Size(38, 13);
+            this.textbox_sp_n4.TabIndex = 7;
+            this.textbox_sp_n4.Text = "1010";
+            this.textbox_sp_n4.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
             // 
             // label1
             // 
             this.label1.AutoSize = true;
             this.label1.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.label1.ForeColor = System.Drawing.SystemColors.ControlText;
-            this.label1.Location = new System.Drawing.Point(13, 78);
+            this.label1.Location = new System.Drawing.Point(14, 78);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(27, 13);
             this.label1.TabIndex = 0;
@@ -895,8 +894,12 @@
             // 
             // flags_group
             // 
-            this.flags_group.Controls.Add(this.label12);
+            this.flags_group.Controls.Add(this.label3);
+            this.flags_group.Controls.Add(this.textbox_hlta);
+            this.flags_group.Controls.Add(this.label2);
             this.flags_group.Controls.Add(this.textbox_iff);
+            this.flags_group.Controls.Add(this.label12);
+            this.flags_group.Controls.Add(this.textbox_inte);
             this.flags_group.Controls.Add(this.textbox_acf);
             this.flags_group.Controls.Add(this.textbox_sf);
             this.flags_group.Controls.Add(this.textbox_pf);
@@ -911,7 +914,7 @@
             this.flags_group.ForeColor = System.Drawing.SystemColors.ControlDarkDark;
             this.flags_group.Location = new System.Drawing.Point(77, 0);
             this.flags_group.Name = "flags_group";
-            this.flags_group.Size = new System.Drawing.Size(53, 181);
+            this.flags_group.Size = new System.Drawing.Size(62, 181);
             this.flags_group.TabIndex = 12;
             this.flags_group.TabStop = false;
             this.flags_group.Text = "Flags";
@@ -920,30 +923,30 @@
             // 
             this.label12.AutoSize = true;
             this.label12.ForeColor = System.Drawing.SystemColors.ControlText;
-            this.label12.Location = new System.Drawing.Point(3, 135);
+            this.label12.Location = new System.Drawing.Point(7, 121);
             this.label12.Name = "label12";
-            this.label12.Size = new System.Drawing.Size(22, 13);
+            this.label12.Size = new System.Drawing.Size(32, 13);
             this.label12.TabIndex = 12;
-            this.label12.Text = "IFF";
+            this.label12.Text = "INTE";
             // 
-            // textbox_iff
+            // textbox_inte
             // 
-            this.textbox_iff.BackColor = System.Drawing.Color.LightGray;
-            this.textbox_iff.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            this.textbox_iff.Font = new System.Drawing.Font("MS Gothic", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.textbox_iff.Location = new System.Drawing.Point(27, 135);
-            this.textbox_iff.Name = "textbox_iff";
-            this.textbox_iff.ReadOnly = true;
-            this.textbox_iff.Size = new System.Drawing.Size(13, 13);
-            this.textbox_iff.TabIndex = 11;
-            this.textbox_iff.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
+            this.textbox_inte.BackColor = System.Drawing.Color.LightGray;
+            this.textbox_inte.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            this.textbox_inte.Font = new System.Drawing.Font("MS Gothic", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.textbox_inte.Location = new System.Drawing.Point(40, 121);
+            this.textbox_inte.Name = "textbox_inte";
+            this.textbox_inte.ReadOnly = true;
+            this.textbox_inte.Size = new System.Drawing.Size(13, 13);
+            this.textbox_inte.TabIndex = 11;
+            this.textbox_inte.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
             // 
             // textbox_acf
             // 
             this.textbox_acf.BackColor = System.Drawing.Color.LightGray;
             this.textbox_acf.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.textbox_acf.Font = new System.Drawing.Font("MS Gothic", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.textbox_acf.Location = new System.Drawing.Point(27, 97);
+            this.textbox_acf.Location = new System.Drawing.Point(40, 97);
             this.textbox_acf.Name = "textbox_acf";
             this.textbox_acf.ReadOnly = true;
             this.textbox_acf.Size = new System.Drawing.Size(13, 13);
@@ -955,7 +958,7 @@
             this.textbox_sf.BackColor = System.Drawing.Color.LightGray;
             this.textbox_sf.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.textbox_sf.Font = new System.Drawing.Font("MS Gothic", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.textbox_sf.Location = new System.Drawing.Point(27, 78);
+            this.textbox_sf.Location = new System.Drawing.Point(40, 78);
             this.textbox_sf.Name = "textbox_sf";
             this.textbox_sf.ReadOnly = true;
             this.textbox_sf.Size = new System.Drawing.Size(13, 13);
@@ -967,7 +970,7 @@
             this.textbox_pf.BackColor = System.Drawing.Color.LightGray;
             this.textbox_pf.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.textbox_pf.Font = new System.Drawing.Font("MS Gothic", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.textbox_pf.Location = new System.Drawing.Point(27, 59);
+            this.textbox_pf.Location = new System.Drawing.Point(40, 59);
             this.textbox_pf.Name = "textbox_pf";
             this.textbox_pf.ReadOnly = true;
             this.textbox_pf.Size = new System.Drawing.Size(13, 13);
@@ -979,7 +982,7 @@
             this.textbox_cf.BackColor = System.Drawing.Color.LightGray;
             this.textbox_cf.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.textbox_cf.Font = new System.Drawing.Font("MS Gothic", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.textbox_cf.Location = new System.Drawing.Point(27, 21);
+            this.textbox_cf.Location = new System.Drawing.Point(40, 21);
             this.textbox_cf.Name = "textbox_cf";
             this.textbox_cf.ReadOnly = true;
             this.textbox_cf.Size = new System.Drawing.Size(13, 13);
@@ -992,7 +995,7 @@
             this.textbox_zf.BackColor = System.Drawing.Color.LightGray;
             this.textbox_zf.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.textbox_zf.Font = new System.Drawing.Font("MS Gothic", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.textbox_zf.Location = new System.Drawing.Point(27, 40);
+            this.textbox_zf.Location = new System.Drawing.Point(40, 40);
             this.textbox_zf.Name = "textbox_zf";
             this.textbox_zf.ReadOnly = true;
             this.textbox_zf.Size = new System.Drawing.Size(13, 13);
@@ -1004,7 +1007,7 @@
             // 
             this.label_flag_c.AutoSize = true;
             this.label_flag_c.ForeColor = System.Drawing.SystemColors.ControlText;
-            this.label_flag_c.Location = new System.Drawing.Point(10, 21);
+            this.label_flag_c.Location = new System.Drawing.Point(23, 21);
             this.label_flag_c.Name = "label_flag_c";
             this.label_flag_c.Size = new System.Drawing.Size(14, 13);
             this.label_flag_c.TabIndex = 0;
@@ -1014,7 +1017,7 @@
             // 
             this.label_flag_z.AutoSize = true;
             this.label_flag_z.ForeColor = System.Drawing.SystemColors.ControlText;
-            this.label_flag_z.Location = new System.Drawing.Point(10, 40);
+            this.label_flag_z.Location = new System.Drawing.Point(23, 40);
             this.label_flag_z.Name = "label_flag_z";
             this.label_flag_z.Size = new System.Drawing.Size(14, 13);
             this.label_flag_z.TabIndex = 1;
@@ -1024,7 +1027,7 @@
             // 
             this.label_flag_p.AutoSize = true;
             this.label_flag_p.ForeColor = System.Drawing.SystemColors.ControlText;
-            this.label_flag_p.Location = new System.Drawing.Point(10, 59);
+            this.label_flag_p.Location = new System.Drawing.Point(23, 59);
             this.label_flag_p.Name = "label_flag_p";
             this.label_flag_p.Size = new System.Drawing.Size(14, 13);
             this.label_flag_p.TabIndex = 2;
@@ -1034,7 +1037,7 @@
             // 
             this.label_flag_s.AutoSize = true;
             this.label_flag_s.ForeColor = System.Drawing.SystemColors.ControlText;
-            this.label_flag_s.Location = new System.Drawing.Point(10, 78);
+            this.label_flag_s.Location = new System.Drawing.Point(23, 78);
             this.label_flag_s.Name = "label_flag_s";
             this.label_flag_s.Size = new System.Drawing.Size(14, 13);
             this.label_flag_s.TabIndex = 3;
@@ -1044,7 +1047,7 @@
             // 
             this.label_flag_ac.AutoSize = true;
             this.label_flag_ac.ForeColor = System.Drawing.SystemColors.ControlText;
-            this.label_flag_ac.Location = new System.Drawing.Point(5, 97);
+            this.label_flag_ac.Location = new System.Drawing.Point(18, 97);
             this.label_flag_ac.Name = "label_flag_ac";
             this.label_flag_ac.Size = new System.Drawing.Size(21, 13);
             this.label_flag_ac.TabIndex = 4;
@@ -1164,9 +1167,9 @@
             this.label_reg_bc.ForeColor = System.Drawing.SystemColors.ControlText;
             this.label_reg_bc.Location = new System.Drawing.Point(3, 37);
             this.label_reg_bc.Name = "label_reg_bc";
-            this.label_reg_bc.Size = new System.Drawing.Size(20, 13);
+            this.label_reg_bc.Size = new System.Drawing.Size(21, 13);
             this.label_reg_bc.TabIndex = 1;
-            this.label_reg_bc.Text = "BF";
+            this.label_reg_bc.Text = "BC";
             // 
             // label_reg_de
             // 
@@ -1228,7 +1231,8 @@
             // 
             this.tools.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.toolStripButton1,
-            this.toolStripButton2});
+            this.toolStripButton2,
+            this.toolStripButton3});
             this.tools.Location = new System.Drawing.Point(0, 24);
             this.tools.Name = "tools";
             this.tools.Size = new System.Drawing.Size(1177, 25);
@@ -1254,6 +1258,60 @@
             this.toolStripButton2.Size = new System.Drawing.Size(23, 22);
             this.toolStripButton2.Text = "toolStripButton2";
             this.toolStripButton2.Click += new System.EventHandler(this.toolStripButton2_Click);
+            // 
+            // toolStripButton3
+            // 
+            this.toolStripButton3.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.toolStripButton3.Image = ((System.Drawing.Image)(resources.GetObject("toolStripButton3.Image")));
+            this.toolStripButton3.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.toolStripButton3.Name = "toolStripButton3";
+            this.toolStripButton3.Size = new System.Drawing.Size(23, 22);
+            this.toolStripButton3.Text = "toolStripButton3";
+            this.toolStripButton3.Click += new System.EventHandler(this.toolStripButton3_Click);
+            // 
+            // label2
+            // 
+            this.label2.AutoSize = true;
+            this.label2.ForeColor = System.Drawing.SystemColors.ControlText;
+            this.label2.Location = new System.Drawing.Point(12, 140);
+            this.label2.Name = "label2";
+            this.label2.Size = new System.Drawing.Size(22, 13);
+            this.label2.TabIndex = 14;
+            this.label2.Text = "IFF";
+            // 
+            // textbox_iff
+            // 
+            this.textbox_iff.BackColor = System.Drawing.Color.LightGray;
+            this.textbox_iff.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            this.textbox_iff.Font = new System.Drawing.Font("MS Gothic", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.textbox_iff.Location = new System.Drawing.Point(40, 140);
+            this.textbox_iff.Name = "textbox_iff";
+            this.textbox_iff.ReadOnly = true;
+            this.textbox_iff.Size = new System.Drawing.Size(13, 13);
+            this.textbox_iff.TabIndex = 13;
+            this.textbox_iff.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
+            // 
+            // label3
+            // 
+            this.label3.AutoSize = true;
+            this.label3.ForeColor = System.Drawing.SystemColors.ControlText;
+            this.label3.Location = new System.Drawing.Point(2, 159);
+            this.label3.Name = "label3";
+            this.label3.Size = new System.Drawing.Size(35, 13);
+            this.label3.TabIndex = 16;
+            this.label3.Text = "HLTA";
+            // 
+            // textbox_hlta
+            // 
+            this.textbox_hlta.BackColor = System.Drawing.Color.LightGray;
+            this.textbox_hlta.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            this.textbox_hlta.Font = new System.Drawing.Font("MS Gothic", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.textbox_hlta.Location = new System.Drawing.Point(40, 159);
+            this.textbox_hlta.Name = "textbox_hlta";
+            this.textbox_hlta.ReadOnly = true;
+            this.textbox_hlta.Size = new System.Drawing.Size(13, 13);
+            this.textbox_hlta.TabIndex = 15;
+            this.textbox_hlta.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
             // 
             // form_debugger
             // 
@@ -1343,22 +1401,22 @@
         private System.Windows.Forms.Label label_flag_ac;
         private System.Windows.Forms.TextBox textbox_pc;
         private System.Windows.Forms.GroupBox stack_group;
-        private System.Windows.Forms.TextBox textBox5;
-        private System.Windows.Forms.TextBox textBox11;
-        private System.Windows.Forms.TextBox textBox12;
-        private System.Windows.Forms.TextBox textBox13;
-        private System.Windows.Forms.TextBox textBox14;
+        private System.Windows.Forms.TextBox textbox_sp_p2;
+        private System.Windows.Forms.TextBox textbox_sp_0;
+        private System.Windows.Forms.TextBox textbox_sp_n2;
+        private System.Windows.Forms.TextBox textbox_sp_n6;
+        private System.Windows.Forms.TextBox textbox_sp_n4;
         private System.Windows.Forms.Label label1;
-        private System.Windows.Forms.TextBox textBox15;
-        private System.Windows.Forms.Label label6;
-        private System.Windows.Forms.TextBox textBox16;
-        private System.Windows.Forms.Label label11;
-        private System.Windows.Forms.Label label10;
-        private System.Windows.Forms.Label label9;
-        private System.Windows.Forms.Label label8;
-        private System.Windows.Forms.Label label7;
+        private System.Windows.Forms.TextBox textbox_sp_p4;
+        private System.Windows.Forms.Label label_sp_n6;
+        private System.Windows.Forms.TextBox textbox_sp_p6;
+        private System.Windows.Forms.Label label_sp_p6;
+        private System.Windows.Forms.Label label_sp_p4;
+        private System.Windows.Forms.Label label_sp_p2;
+        private System.Windows.Forms.Label label_sp_n2;
+        private System.Windows.Forms.Label label_sp_n4;
         private System.Windows.Forms.Label label12;
-        private System.Windows.Forms.TextBox textbox_iff;
+        private System.Windows.Forms.TextBox textbox_inte;
         private System.Windows.Forms.GroupBox hardware_group;
         private System.Windows.Forms.Label label16;
         private System.Windows.Forms.Label label17;
@@ -1397,5 +1455,10 @@
         private System.Windows.Forms.DataGridViewTextBoxColumn value_column_name;
         private System.Windows.Forms.PictureBox img_arrow_pc;
         private System.Windows.Forms.ToolStripButton toolStripButton2;
+        private System.Windows.Forms.ToolStripButton toolStripButton3;
+        private System.Windows.Forms.Label label2;
+        private System.Windows.Forms.TextBox textbox_iff;
+        private System.Windows.Forms.Label label3;
+        private System.Windows.Forms.TextBox textbox_hlta;
     }
 }

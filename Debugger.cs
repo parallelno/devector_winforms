@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static devector.Memory;
 using static System.Windows.Forms.LinkLabel;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.ListView;
 
@@ -10,8 +11,13 @@ namespace devector
 {
 	public class Debugger
 	{
+		public enum MemAccess
+		{
+			RUN, READ, WRITE
+		}
+
 		static readonly string[] mnemonics = new string[0x100]
-		{ 
+		{
 			"NOP", "LXI B,", "STAX B", "INX B",
 			"INR B", "DCR B", "MVI B,", "RLC", "DB 0x08", "DAD B", "LDAX B", "DCX B",
 			"INR C", "DCR C", "MVI C,", "RRC", "DB 0x10", "LXI D,", "STAX D", "INX D",
@@ -56,8 +62,6 @@ namespace devector
 		private Memory memory;
 		private Hardware hardware;
 
-		public UInt64 cc_last;
-
 		static UInt64[] mem_runs = new UInt64[Memory.GLOBAL_MEMORY_LEN];
 		static UInt64[] mem_reads = new UInt64[Memory.GLOBAL_MEMORY_LEN];
 		static UInt64[] mem_writes = new UInt64[Memory.GLOBAL_MEMORY_LEN];
@@ -65,8 +69,14 @@ namespace devector
 		public Debugger(Memory _memory)
 		{
 			memory = _memory;
-			cc_last = 0;
 		}
+
+		public void init()
+		{
+			Array.Clear(mem_runs, 0, mem_runs.Length);
+            Array.Clear(mem_reads, 0, mem_reads.Length);
+            Array.Clear(mem_writes, 0, mem_writes.Length);
+        }
 
 		// define the maximum number of bytes in a command
 		const int CMD_BYTES_MAX = 3;
@@ -84,24 +94,20 @@ namespace devector
 			1, 2, 1, 1, 1, 3, 2, 3, 1, 2, 1, 1, 1, 3, 1, 3, 1, 2, 1, 1, 1, 3, 1, 3, 1,
 			2, 1, 1, 1, 3, 1, 3, 1, 2, 1, 1, 1, 3, 1, 3, 1, 2, 1 };
 
-		// gets the length of a command based on its opcode
-		UInt16 get_cmd_len(byte addr)
+		// returns the instruction length in bytes
+		UInt16 get_cmd_len(byte opcode)
 		{
-			return cmd_lens[addr];
+			return cmd_lens[opcode];
 		}
 
-		// array to store command parts
+		// array to store instruction parts
 		static int[] cmd = new int[3];
 		const int CMD_OPCODE = 0;
 		const int CMD_OP_L = 1;
 		const int CMD_OP_H = 2;
 
-		// define the maximum length of data characters
-		const int MAX_DATA_CHR_LEN = 11;
-		const int CMD_LEN_MIN = 13;
-
-		// gets the mnemonic for a command
-		string get_mnemonic(byte _opcode, byte _data_l, byte _data_h, int _cmd_len_min)
+        // returns the mnemonic for an instruction
+        string get_mnemonic(byte _opcode, byte _data_l, byte _data_h)
 		{
 			string output = mnemonics[_opcode];
 
@@ -114,18 +120,19 @@ namespace devector
 				int data_w = (_data_h << 8) + _data_l;
 				output += $" {data_w:X4}";
 			}
-			/*
-			// Pad the output to a minimum length
-			for (int i = output.Length; i < _cmd_len_min; i++)
-			{
-				output += " ";
-			}
-			*/
 			return output;
 		}
 
-		// Array defining types of opcodes
-		readonly byte[] opcode_types = new byte[0x100] {
+        // Array defining types of opcodes
+        // 0 - call
+        // 1 - c*
+        // 2 - rst
+        // 3 - pchl
+        // 4 - jmp,
+        // 5 - j*
+        // 6 - ret, r*
+        // 7 - other
+        readonly byte[] opcode_types = new byte[0x100] {
 			7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
 			7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
 			7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
@@ -135,7 +142,7 @@ namespace devector
 			1, 7, 7, 2, 6, 6, 5, 7, 1, 0, 7, 2, 6, 7, 5, 7, 1, 7, 7, 2, 6, 7, 5, 7, 1, 7, 7, 2, 6, 7, 5, 7, 1,
 			7, 7, 2, 6, 3, 5, 7, 1, 7, 7, 2, 6, 7, 5, 7, 1, 7, 7, 2, 6, 7, 5, 7, 1, 7, 7, 2};
 
-		// Method to get the type of an opcode
+		// returns the type of an instruction
 		byte get_opcode_type(byte opcode)
 		{
 			return opcode_types[opcode];
@@ -143,44 +150,25 @@ namespace devector
 
 		const byte OPCODE_PCHL = 0xE9;
 
-		// gets disassembled line for a DB (Define Byte) command
+		// disassembles a data byte
 		string get_disasm_db_line(int _addr, byte _data)
 		{
-			return $"0x{_addr:X4}: {_data:X2}".PadRight(MAX_DATA_CHR_LEN) + $"DB {_data:X2}";
+			return $"0x{_addr:X4}" + "\t" + $"DB {_data:X2}";
 		}
 
-		// gets disassembled line for a command
+		// disassembles an instruction
 		string get_disasm_line(int _addr, byte _opcode, byte _data_l, byte _data_h)
 		{
 			cmd[CMD_OPCODE] = _opcode;
 			cmd[CMD_OP_L] = _data_l;
 			cmd[CMD_OP_H] = _data_h;
 
-			int cmd_len = get_cmd_len(_opcode);
-
-			string output = $"0x{_addr:X4}";
-			/*
-			// print data in a format " %02X %02X %02X"
-			int i = 0;
-			for (; i < cmd_len; i++)
-			{
-				output += $" {cmd[i]:X2}";
-			}
-			*/
-			/*
-			// add whitespaces at the end of data
-			i *= 3; // every byte takes three chars " %02X"
-			for (; i < MAX_DATA_CHR_LEN; i++)
-			{
-				output += " ";
-			}
-			*/
-			output += "\t" + get_mnemonic(_opcode, _data_l, _data_h, CMD_LEN_MIN);
+			string output = $"0x{_addr:X4}" + "\t" + get_mnemonic(_opcode, _data_l, _data_h);
 
 			return output;
 		}
 
-		// calculates the start address for a range of lines before a given address
+		// calculates the start address for a range of instructions before a given address
 		UInt16 get_addr(UInt16 _end_addr, int _before_addr_lines)
 		{
 			if (_before_addr_lines == 0) return _end_addr;
@@ -244,11 +232,8 @@ namespace devector
 						byte db = memory.get_byte(addr);
 						string line_s = get_disasm_db_line(addr, db);
 
-						int global_addr = memory.get_global_addr(addr, Memory.Access.RAM);
-						var runs = mem_runs[global_addr];
-						var reads = mem_reads[global_addr];
-						var writes = mem_writes[global_addr];
-						line_s += $" ({runs},{reads},{writes})";
+						int global_addr = memory.get_global_addr(addr, Memory.AddrSpace.RAM);
+                        line_s += $"\t{mem_runs[global_addr]},{mem_reads[global_addr]},{mem_writes[global_addr]}";
 
 						if (labels.ContainsKey(addr))
 						{
@@ -270,7 +255,7 @@ namespace devector
 				byte data_h = memory.get_byte(addr + 2);
 				string line_s = get_disasm_line(addr, opcode, data_l, data_h);
 
-				int global_addr = memory.get_global_addr(addr, Memory.Access.RAM);
+				int global_addr = memory.get_global_addr(addr, Memory.AddrSpace.RAM);
 				line_s += $"\t{mem_runs[global_addr]},{mem_reads[global_addr]},{mem_writes[global_addr]}";
 
 				if (labels.ContainsKey(addr & 0xffff))
@@ -303,5 +288,22 @@ namespace devector
 
 			return output;
 		}
-	}
+
+        public void mem_access(int addr, MemAccess mem_access, AddrSpace addr_space = AddrSpace.RAM)
+        {
+            addr = memory.get_global_addr((UInt16)(addr & 0xffff), addr_space);
+            if (mem_access == MemAccess.RUN)
+			{
+				mem_runs[addr] += 1;
+			}
+			else if (mem_access == MemAccess.READ)
+			{
+				mem_reads[addr] += 1;
+            }
+            else
+            {
+                mem_writes[addr] += 1;
+            }
+        }
+    }
 }

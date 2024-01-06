@@ -19,10 +19,9 @@ namespace devector
 		public Hardware() {
 			memory = new Memory();
 			io = new IO(memory);
-			cpu = new I8080(memory.get_byte, memory.set_byte, io.port_in, io.port_out);
+            debugger = new Debugger(memory);
+            cpu = new I8080(memory.get_byte, memory.set_byte, io.port_in, io.port_out, debugger.mem_access);
 			display = new Display(memory);
-
-			debugger = new Debugger(memory);
 		}
 
 		public void load_rom(string path)
@@ -50,17 +49,18 @@ namespace devector
 		{
 			memory.init();
 			cpu.init();
+			display.reset();
+            debugger.init();
         }
 
         // rasterizes the frame. it's called by the 50 Hz times
         public static void execute_frame()
 		{
-			// per pixel loop
-			for (int pxl_idx = 0; pxl_idx < Display.FRAME_CC; pxl_idx++)
+			do
 			{
-				display.rasterize();
-                cpu.execute_machine_cycle(display.INT);
-            }
+                display.rasterize();
+                cpu.execute_machine_cycle(display.INTA);
+            } while (!display.INTA);
         }
 
 		public static void execute_instruction()
@@ -68,8 +68,8 @@ namespace devector
             do
 			{
                 display.rasterize();
-                cpu.execute_machine_cycle(display.INT);
-            } while (cpu.machine_cycle == I8080.INSTR_EXECUTED);
+                cpu.execute_machine_cycle(display.INTA);
+            } while (cpu.machine_cycle != I8080.INSTR_EXECUTED);
         }
 	}
 }

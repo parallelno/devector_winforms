@@ -55,7 +55,7 @@ namespace devector
 		// interruption
 		public bool INTE; // set if an iterrupt enabled
 		public bool IFF; // set by the 50 Hz interruption timer. it is ON until an iterruption call (RST7)
-		public bool HLTA; // indicates that HLT instruction is executed
+        public bool HLTA; // indicates that HLT instruction is executed
 		public bool ei_pending; // if set, the interruption call is pending until the next instruction
 		const byte OPCODE_RST7 = 0xff;
 		const byte OPCODE_HLT = 0x76;
@@ -100,21 +100,19 @@ namespace devector
 			flag_s = flag_z = flag_ac = flag_p = flag_c = INTE = false;
 
 			machine_cycle = 0;
+			HLTA = INTE = IFF = ei_pending = false;
 
-			HLTA = false;
-			ei_pending = false;
-
-			incode_actions();
+            incode_actions();
 		}
 
-		public void execute_machine_cycle(bool INTA)
+		public void execute_machine_cycle(bool T50HZ)
 		{
-			IFF |= INTA;
+			IFF |= T50HZ & INTE;
 
             if (machine_cycle == 0)
 			{
 				// interrupt processing
-				if (INTE && IFF && !ei_pending)
+				if (IFF && !ei_pending)
 				{
 					INTE = false;
 					IFF = false;
@@ -590,20 +588,11 @@ namespace devector
 		// adds a value (+ an optional carry flag) to a register
 		void add(byte _a, byte _b, bool _cy)
 		{
-			ACT = _a;
-			TMP = _b;
-			a = (byte)(ACT + TMP + (_cy ? 1 : 0));
-			flag_c = get_carry(8, ACT, TMP, _cy);
-			flag_ac = get_carry(4, ACT, TMP, _cy);
-			set_z_s_p(a);
-		}
 
-		// substracts a byte (+ an optional carry flag) from a register
-		// see https://stackoverflow.com/a/8037485
-		void sub(byte _a, byte _b, bool _cy)
-		{
-			add(_a, (byte)(~b), !_cy);
-			flag_c = !flag_c;
+			a = (byte)(_a + _b + (_cy ? 1 : 0));
+			flag_c = get_carry(8, _a, _b, _cy);
+			flag_ac = get_carry(4, _a, _b, _cy);
+			set_z_s_p(a);
 		}
 
 		void add_m(bool _cy)
@@ -632,7 +621,15 @@ namespace devector
 			}
 		}
 
-		void sub_m(bool _cy)
+        // substracts a byte (+ an optional carry flag) from a register
+        // see https://stackoverflow.com/a/8037485
+        void sub(byte _a, byte _b, bool _cy)
+        {
+            add(_a, (byte)(~_b), !_cy);
+            flag_c = !flag_c;
+        }
+
+        void sub_m(bool _cy)
 		{
 			if (machine_cycle == 0)
 			{

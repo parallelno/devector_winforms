@@ -14,7 +14,7 @@ namespace devector
 		static int RAMDISK_MAX = 1;
 
 		public static int GLOBAL_MEMORY_LEN = MEMORY_MAIN_LEN + MEMORY_RAMDISK_LEN * RAMDISK_MAX;
-		static byte[] memory = new byte[GLOBAL_MEMORY_LEN];
+        public static byte[] memory = new byte[GLOBAL_MEMORY_LEN];
 
 		static int ROM_LOAD_ADDR = 0x100;
 

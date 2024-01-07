@@ -49,7 +49,7 @@ namespace devector
 		{
 			memory.init();
 			cpu.init();
-			display.reset();
+			display.init();
             debugger.init();
         }
 
@@ -59,8 +59,8 @@ namespace devector
 			do
 			{
                 display.rasterize();
-                cpu.execute_machine_cycle(display.INTA);
-            } while (!display.INTA);
+                cpu.execute_machine_cycle(display.T50HZ);
+            } while (!display.T50HZ);
         }
 
 		public static void execute_instruction()
@@ -68,7 +68,7 @@ namespace devector
             do
 			{
                 display.rasterize();
-                cpu.execute_machine_cycle(display.INTA);
+                cpu.execute_machine_cycle(display.T50HZ);
             } while (cpu.machine_cycle != I8080.INSTR_EXECUTED);
         }
 	}

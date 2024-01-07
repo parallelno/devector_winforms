@@ -15,18 +15,21 @@ namespace devector
 	{
 		const UInt16 BEFORE_ADDR_LINES = 6;
         public UInt64 cc_last;
+		PictureBox picture_display;
 
-        public form_debugger()
+        public form_debugger(PictureBox _picture_display)
 		{
 			InitializeComponent();
 
-			update_form();
+            picture_display = _picture_display;
+
+            update_form();
 			watch_list_init();
 			breakpoints_list_init();
 
 			watch_list_add();
 			breakpoints_list_add();
-		}
+        }
 
 		void watch_list_init()
 		{
@@ -186,6 +189,8 @@ namespace devector
             textbox_sp_p2.Text = $"{Hardware.memory.get_word(Hardware.cpu.sp, Memory.AddrSpace.STACK):X4}";
             textbox_sp_p4.Text = $"{Hardware.memory.get_word(Hardware.cpu.sp + 2, Memory.AddrSpace.STACK):X4}";
             textbox_sp_p6.Text = $"{Hardware.memory.get_word(Hardware.cpu.sp + 4, Memory.AddrSpace.STACK):X4}";
+
+			picture_display.Invalidate();
         }
 
 		public static bool IsHexNumber(string input)

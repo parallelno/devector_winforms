@@ -1,41 +1,38 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
+using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement;
+using System.Xml.Linq;
+
 
 namespace devector
 {
 	public partial class form_debugger : Form
 	{
 		const UInt16 BEFORE_ADDR_LINES = 6;
-        public UInt64 cc_last;
+		public UInt64 cc_last;
 		PictureBox picture_display;
 
-        public form_debugger(PictureBox _picture_display)
+		public form_debugger(PictureBox _picture_display)
 		{
 			InitializeComponent();
 
-            picture_display = _picture_display;
+			picture_display = _picture_display;
 
-            update_form();
+			update_form();
 			watch_list_init();
 			breakpoints_list_init();
 
 			watch_list_add();
 			breakpoints_list_add();
-        }
+		}
 
 		void watch_list_init()
 		{
 			watch_datagrid.Rows.Clear();
 			watch_datagrid.RowHeadersVisible = false;
-        }
+		}
 		void watch_list_add()
 		{
 			DataGridViewRow row = new DataGridViewRow();
@@ -182,16 +179,16 @@ namespace devector
 			textbox_crt_y.Text = $"{Hardware.display.raster_line}";
 
 			// stack data
-            textbox_sp_n6.Text = $"{Hardware.memory.get_word(Hardware.cpu.sp - 8, Memory.AddrSpace.STACK):X4}";
-            textbox_sp_n4.Text = $"{Hardware.memory.get_word(Hardware.cpu.sp - 6, Memory.AddrSpace.STACK):X4}";
-            textbox_sp_n2.Text = $"{Hardware.memory.get_word(Hardware.cpu.sp - 4, Memory.AddrSpace.STACK):X4}";
+			textbox_sp_n6.Text = $"{Hardware.memory.get_word(Hardware.cpu.sp - 8, Memory.AddrSpace.STACK):X4}";
+			textbox_sp_n4.Text = $"{Hardware.memory.get_word(Hardware.cpu.sp - 6, Memory.AddrSpace.STACK):X4}";
+			textbox_sp_n2.Text = $"{Hardware.memory.get_word(Hardware.cpu.sp - 4, Memory.AddrSpace.STACK):X4}";
 			textbox_sp_0.Text = $"{Hardware.memory.get_word(Hardware.cpu.sp - 2, Memory.AddrSpace.STACK):X4}";
-            textbox_sp_p2.Text = $"{Hardware.memory.get_word(Hardware.cpu.sp, Memory.AddrSpace.STACK):X4}";
-            textbox_sp_p4.Text = $"{Hardware.memory.get_word(Hardware.cpu.sp + 2, Memory.AddrSpace.STACK):X4}";
-            textbox_sp_p6.Text = $"{Hardware.memory.get_word(Hardware.cpu.sp + 4, Memory.AddrSpace.STACK):X4}";
+			textbox_sp_p2.Text = $"{Hardware.memory.get_word(Hardware.cpu.sp, Memory.AddrSpace.STACK):X4}";
+			textbox_sp_p4.Text = $"{Hardware.memory.get_word(Hardware.cpu.sp + 2, Memory.AddrSpace.STACK):X4}";
+			textbox_sp_p6.Text = $"{Hardware.memory.get_word(Hardware.cpu.sp + 4, Memory.AddrSpace.STACK):X4}";
 
 			picture_display.Invalidate();
-        }
+		}
 
 		public static bool IsHexNumber(string input)
 		{
@@ -210,7 +207,7 @@ namespace devector
 			if (e.KeyCode == Keys.Enter)
 			{
 				string text = search_box.Text;
-				
+
 				if (IsHexNumber(text))
 				{
 					update_form((UInt16)(Convert.ToInt32(text, 16)));
@@ -222,15 +219,15 @@ namespace devector
 		{
 			cc_last = Hardware.cpu.cc;
 
-            Hardware.execute_instruction();
+			Hardware.execute_instruction();
 			update_form();
 		}
 
 		private void toolStripButton2_Click(object sender, EventArgs e)
 		{
-            cc_last = Hardware.cpu.cc;
+			cc_last = Hardware.cpu.cc;
 
-            for (int i = 0; i < 256; i++)
+			for (int i = 0; i < 256; i++)
 			{
 				Hardware.execute_instruction();
 			}
@@ -239,10 +236,18 @@ namespace devector
 
 		private void toolStripButton3_Click(object sender, EventArgs e)
 		{
-            cc_last = Hardware.cpu.cc;
+			cc_last = Hardware.cpu.cc;
 
-            Hardware.execute_frame();
-			update_form();
-		}
+			Stopwatch stopwatch = Stopwatch.StartNew();
+
+			for(int i = 0; i<1000; i++)
+				Hardware.execute_frame();
+
+			stopwatch.Stop();
+			TimeSpan elapsedTime = stopwatch.Elapsed;
+			label5.Text = $"Elapsed time: {elapsedTime}";
+
+            update_form();
+        }
 	}
 }

@@ -1,30 +1,22 @@
-﻿using Newtonsoft.Json.Linq;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace devector
+﻿namespace devector
 {
-	public class IO
-	{
-		private static Memory memory;
-		private byte outport;
-		private byte outbyte;
-		private bool outset;
+    public class IO
+    {
+        private static Memory memory;
+        private byte outport;
+        private byte outbyte;
+        private bool outset;
 
-		IO()
-		{
+        IO()
+        {
             this.outport = 0;
             this.outbyte = 0;
-			outset = false;
+            outset = false;
         }
 
         public byte port_in(byte port)
-		{
-			/*
+        {
+            /*
 			byte result = 0xff;
 
 			switch (port)
@@ -129,12 +121,12 @@ namespace devector
 
 			return result;
 			*/
-			return 0;
-		}
+            return 0;
+        }
 
-		public void port_out(byte port, byte value)
-		{
-			/*
+        public void port_out(byte port, byte value)
+        {
+            /*
 			 * a callback for debugging
 			 * TODO: clean it
             if (this->onwrite)
@@ -146,8 +138,9 @@ namespace devector
             this.outbyte = value;
         }
 
-		public IO(Memory _memory) {
-			memory = _memory;
-		}
-	}
+        public IO(Memory _memory)
+        {
+            memory = _memory;
+        }
+    }
 }

@@ -1,12 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Drawing.Imaging;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace devector
@@ -22,9 +14,9 @@ namespace devector
 			hardware = _hardware;
 			recentFileManager.LoadRecentFiles();
 			UpdateRecentFilesMenu();
-            
+
 			picture_display.Image = Hardware.display.frame;
-        }
+		}
 		private void UpdateRecentFilesMenu()
 		{
 			recentFilesToolStripMenuItem.DropDownItems.Clear();
@@ -45,7 +37,7 @@ namespace devector
 			// Add your code to open the file
 			recentFileManager.AddFile(path);
 			UpdateRecentFilesMenu();
-			
+
 			hardware.load_rom(path);
 		}
 

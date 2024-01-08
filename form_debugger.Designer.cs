@@ -41,6 +41,7 @@
             this.breakpoints_list = new System.Windows.Forms.ListBox();
             this.addr_list = new System.Windows.Forms.ListBox();
             this.search_box = new System.Windows.Forms.TextBox();
+            this.label5 = new System.Windows.Forms.Label();
             this.middle_panel = new System.Windows.Forms.Panel();
             this.breakpoints_watch = new System.Windows.Forms.GroupBox();
             this.splitContainer2 = new System.Windows.Forms.SplitContainer();
@@ -90,6 +91,10 @@
             this.textbox_sp_n4 = new System.Windows.Forms.TextBox();
             this.label1 = new System.Windows.Forms.Label();
             this.flags_group = new System.Windows.Forms.GroupBox();
+            this.label3 = new System.Windows.Forms.Label();
+            this.textbox_hlta = new System.Windows.Forms.TextBox();
+            this.label2 = new System.Windows.Forms.Label();
+            this.textbox_iff = new System.Windows.Forms.TextBox();
             this.label12 = new System.Windows.Forms.Label();
             this.textbox_inte = new System.Windows.Forms.TextBox();
             this.textbox_acf = new System.Windows.Forms.TextBox();
@@ -121,10 +126,6 @@
             this.toolStripButton1 = new System.Windows.Forms.ToolStripButton();
             this.toolStripButton2 = new System.Windows.Forms.ToolStripButton();
             this.toolStripButton3 = new System.Windows.Forms.ToolStripButton();
-            this.label2 = new System.Windows.Forms.Label();
-            this.textbox_iff = new System.Windows.Forms.TextBox();
-            this.label3 = new System.Windows.Forms.Label();
-            this.textbox_hlta = new System.Windows.Forms.TextBox();
             ((System.ComponentModel.ISupportInitialize)(this.main_panel)).BeginInit();
             this.main_panel.Panel1.SuspendLayout();
             this.main_panel.Panel2.SuspendLayout();
@@ -165,6 +166,7 @@
             // 
             // main_panel.Panel2
             // 
+            this.main_panel.Panel2.Controls.Add(this.label5);
             this.main_panel.Panel2.Controls.Add(this.middle_panel);
             this.main_panel.Size = new System.Drawing.Size(1177, 712);
             this.main_panel.SplitterDistance = 531;
@@ -305,6 +307,15 @@
             this.search_box.Size = new System.Drawing.Size(525, 20);
             this.search_box.TabIndex = 2;
             this.search_box.KeyDown += new System.Windows.Forms.KeyEventHandler(this.search_box_KeyDown);
+            // 
+            // label5
+            // 
+            this.label5.AutoSize = true;
+            this.label5.Location = new System.Drawing.Point(424, 310);
+            this.label5.Name = "label5";
+            this.label5.Size = new System.Drawing.Size(35, 13);
+            this.label5.TabIndex = 1;
+            this.label5.Text = "label5";
             // 
             // middle_panel
             // 
@@ -919,6 +930,50 @@
             this.flags_group.TabStop = false;
             this.flags_group.Text = "Flags";
             // 
+            // label3
+            // 
+            this.label3.AutoSize = true;
+            this.label3.ForeColor = System.Drawing.SystemColors.ControlText;
+            this.label3.Location = new System.Drawing.Point(2, 159);
+            this.label3.Name = "label3";
+            this.label3.Size = new System.Drawing.Size(35, 13);
+            this.label3.TabIndex = 16;
+            this.label3.Text = "HLTA";
+            // 
+            // textbox_hlta
+            // 
+            this.textbox_hlta.BackColor = System.Drawing.Color.LightGray;
+            this.textbox_hlta.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            this.textbox_hlta.Font = new System.Drawing.Font("MS Gothic", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.textbox_hlta.Location = new System.Drawing.Point(40, 159);
+            this.textbox_hlta.Name = "textbox_hlta";
+            this.textbox_hlta.ReadOnly = true;
+            this.textbox_hlta.Size = new System.Drawing.Size(13, 13);
+            this.textbox_hlta.TabIndex = 15;
+            this.textbox_hlta.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
+            // 
+            // label2
+            // 
+            this.label2.AutoSize = true;
+            this.label2.ForeColor = System.Drawing.SystemColors.ControlText;
+            this.label2.Location = new System.Drawing.Point(12, 140);
+            this.label2.Name = "label2";
+            this.label2.Size = new System.Drawing.Size(22, 13);
+            this.label2.TabIndex = 14;
+            this.label2.Text = "IFF";
+            // 
+            // textbox_iff
+            // 
+            this.textbox_iff.BackColor = System.Drawing.Color.LightGray;
+            this.textbox_iff.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            this.textbox_iff.Font = new System.Drawing.Font("MS Gothic", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.textbox_iff.Location = new System.Drawing.Point(40, 140);
+            this.textbox_iff.Name = "textbox_iff";
+            this.textbox_iff.ReadOnly = true;
+            this.textbox_iff.Size = new System.Drawing.Size(13, 13);
+            this.textbox_iff.TabIndex = 13;
+            this.textbox_iff.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
+            // 
             // label12
             // 
             this.label12.AutoSize = true;
@@ -1269,50 +1324,6 @@
             this.toolStripButton3.Text = "toolStripButton3";
             this.toolStripButton3.Click += new System.EventHandler(this.toolStripButton3_Click);
             // 
-            // label2
-            // 
-            this.label2.AutoSize = true;
-            this.label2.ForeColor = System.Drawing.SystemColors.ControlText;
-            this.label2.Location = new System.Drawing.Point(12, 140);
-            this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(22, 13);
-            this.label2.TabIndex = 14;
-            this.label2.Text = "IFF";
-            // 
-            // textbox_iff
-            // 
-            this.textbox_iff.BackColor = System.Drawing.Color.LightGray;
-            this.textbox_iff.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            this.textbox_iff.Font = new System.Drawing.Font("MS Gothic", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.textbox_iff.Location = new System.Drawing.Point(40, 140);
-            this.textbox_iff.Name = "textbox_iff";
-            this.textbox_iff.ReadOnly = true;
-            this.textbox_iff.Size = new System.Drawing.Size(13, 13);
-            this.textbox_iff.TabIndex = 13;
-            this.textbox_iff.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
-            // 
-            // label3
-            // 
-            this.label3.AutoSize = true;
-            this.label3.ForeColor = System.Drawing.SystemColors.ControlText;
-            this.label3.Location = new System.Drawing.Point(2, 159);
-            this.label3.Name = "label3";
-            this.label3.Size = new System.Drawing.Size(35, 13);
-            this.label3.TabIndex = 16;
-            this.label3.Text = "HLTA";
-            // 
-            // textbox_hlta
-            // 
-            this.textbox_hlta.BackColor = System.Drawing.Color.LightGray;
-            this.textbox_hlta.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            this.textbox_hlta.Font = new System.Drawing.Font("MS Gothic", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.textbox_hlta.Location = new System.Drawing.Point(40, 159);
-            this.textbox_hlta.Name = "textbox_hlta";
-            this.textbox_hlta.ReadOnly = true;
-            this.textbox_hlta.Size = new System.Drawing.Size(13, 13);
-            this.textbox_hlta.TabIndex = 15;
-            this.textbox_hlta.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
-            // 
             // form_debugger
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -1325,6 +1336,7 @@
             this.Text = "Debugger";
             this.main_panel.Panel1.ResumeLayout(false);
             this.main_panel.Panel2.ResumeLayout(false);
+            this.main_panel.Panel2.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.main_panel)).EndInit();
             this.main_panel.ResumeLayout(false);
             this.disasm_group.ResumeLayout(false);
@@ -1460,5 +1472,6 @@
         private System.Windows.Forms.TextBox textbox_iff;
         private System.Windows.Forms.Label label3;
         private System.Windows.Forms.TextBox textbox_hlta;
+        private System.Windows.Forms.Label label5;
     }
 }

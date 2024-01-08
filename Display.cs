@@ -1,12 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
+using System.Runtime.InteropServices;
 
 namespace devector
 {
@@ -48,13 +43,16 @@ namespace devector
 
 		public const int FRAME_CC = FRAME_W * FRAME_H;
 
-		public Bitmap frame = new Bitmap(FRAME_W, FRAME_H, PixelFormat.Format32bppArgb);
-		public Color[] palette = new Color[PALETTE_LEN];
-		private Color fill_color = Color.Black;
+		public Bitmap frame;// = new Bitmap(FRAME_W, FRAME_H, PixelFormat.Format32bppArgb);
+		public static UInt32[] data = new UInt32[FRAME_W * FRAME_H];
+		protected GCHandle data_handle { get; private set; }
+
+		public UInt32[] palette = new UInt32[PALETTE_LEN];
+		private UInt32 fill_color;
 
 
-		public int raster_line;      // currently rasterized scanline idx from the bottom
-		public int raster_pixel;		// currently rasterized scanline pixel
+		public int raster_line;		// currently rasterized scanline idx from the bottom
+		public int raster_pixel;	// currently rasterized scanline pixel
 
 		public Display(Memory _memory)
 		{
@@ -63,22 +61,26 @@ namespace devector
 
 		public void init()
 		{
-			// erase the frame
-			using (Graphics gfx = Graphics.FromImage(frame))
-			{
-				using (Brush blackBrush = new SolidBrush(Color.Black))
-				{
-					gfx.FillRectangle(blackBrush, 0, 0, frame.Width, frame.Height);
-				}
-			}
-			// reset the palette
-			for (int i = 0; i < PALETTE_LEN; i++)
-			{
-				palette[i] = Color.Yellow;
-			}
 			mode = MODE_256;
 			raster_line = 0;
 			raster_pixel = 0;
+
+			data_handle = GCHandle.Alloc(data, GCHandleType.Pinned);
+			frame = new Bitmap(FRAME_W, FRAME_H, FRAME_W * 4, PixelFormat.Format32bppArgb, data_handle.AddrOfPinnedObject());
+
+
+			//Array.Clear(palette, 0, palette.Length);
+			// reset the palette
+			for (int i = 0; i < PALETTE_LEN; i++)
+			{
+				palette[i] = 0xff000000;
+			}
+
+			// TODO: use Fill instead this
+			for (int i = 0; i < FRAME_H * FRAME_W; i++)
+			{
+				data[i] = 0xff000000;
+			}
 		}
 
 		// to draw a pxl
@@ -98,15 +100,17 @@ namespace devector
 			raster_line = raster_pixel == 0 ? (raster_line + 1) % FRAME_H : raster_line;
 
 			T50HZ = (raster_pixel + raster_line) == 0;
+
+			if (T50HZ) to_bitmap();
 		}
 
 		void draw_active_8_pxls()
 		{
 			byte[] memory = Memory.memory;
 
-            var pos_addr = (raster_pixel - BORDER_LEFT) / RASTERIZED_PXLS * RES_H + RES_H - 1 - (raster_line - BORDER_TOP);
+			var pos_addr = (raster_pixel - BORDER_LEFT) / RASTERIZED_PXLS * RES_H + RES_H - 1 - (raster_line - BORDER_TOP);
 
-            UInt16 addr8 = (UInt16)(0x8000 + pos_addr);
+			UInt16 addr8 = (UInt16)(0x8000 + pos_addr);
 			UInt16 addrA = (UInt16)(0xA000 + pos_addr);
 			UInt16 addrC = (UInt16)(0xC000 + pos_addr);
 			UInt16 addrE = (UInt16)(0xE000 + pos_addr);
@@ -116,30 +120,39 @@ namespace devector
 			var color_byteC = Memory.memory[addrC];
 			var color_byteE = Memory.memory[addrE];
 
-            for (int i = 0; i < RASTERIZED_PXLS; i += 2)
-            {
-				int color_bit8 = (color_byte8 >> (7 - i/2)) & 1;
-				int color_bitA = (color_byteA >> (7 - i/2)) & 1;
-				int color_bitC = (color_byteC >> (7 - i/2)) & 1;
-				int color_bitE = (color_byteE >> (7 - i/2)) & 1;
+			for (int i = 0; i < RASTERIZED_PXLS; i += 2)
+			{
+				int color_bit8 = (color_byte8 >> (7 - i / 2)) & 1;
+				int color_bitA = (color_byteA >> (7 - i / 2)) & 1;
+				int color_bitC = (color_byteC >> (7 - i / 2)) & 1;
+				int color_bitE = (color_byteE >> (7 - i / 2)) & 1;
 
 				int palette_idx = color_bit8 | color_bitA << 1 | color_bitC << 2 | color_bitE << 3;
 
-				fill_color = color_bitE == 0 ? Color.Black : Color.White; // palette[palette_idx];
+				fill_color = (color_bit8 | color_bitA | color_bitC | color_bitE) == 0 ? 0xff000000 : 0xffffffff; // palette[palette_idx];
 
-				frame.SetPixel(raster_pixel + i, raster_line, fill_color);
-				frame.SetPixel(raster_pixel + i + 1, raster_line, fill_color);
+				data[raster_pixel + raster_line * FRAME_W + i] = fill_color;
+				data[raster_pixel + raster_line * FRAME_W + i + 1] = fill_color;
 			}
 		}
 
 		void draw_border_8_pxls_()
 		{
 			for (int i = 0; i < RASTERIZED_PXLS; i += 2)
-			{
-				fill_color = Color.DarkOliveGreen;
-				frame.SetPixel(raster_pixel + i, raster_line, fill_color);
-                frame.SetPixel(raster_pixel + i + 1, raster_line, fill_color);
-            }
+			{	
+				data[raster_pixel + raster_line * FRAME_W + i] = 0xff0000ff;
+				data[raster_pixel + raster_line * FRAME_W + i + 1] = 0xff0000ff;
+			}
+		}
+
+		~Display()
+		{
+			frame.Dispose();
+			data_handle.Free();
+		}
+
+		void to_bitmap()
+		{
 		}
 	}
 }

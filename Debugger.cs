@@ -226,7 +226,7 @@ namespace devector
                         byte db = memory.get_byte(addr);
                         string line_s = get_disasm_db_line(addr, db);
 
-                        int global_addr = memory.get_global_addr(addr, Memory.AddrSpace.RAM);
+                        var global_addr = memory.get_global_addr(addr, Memory.AddrSpace.RAM);
                         line_s += $"\t{mem_runs[global_addr]},{mem_reads[global_addr]},{mem_writes[global_addr]}";
 
                         if (labels.ContainsKey(addr))
@@ -245,11 +245,11 @@ namespace devector
                 //string line_s = addr == cpu.pc ? ">" : " ";
 
                 byte opcode = memory.get_byte(addr);
-                byte data_l = memory.get_byte(addr + 1);
-                byte data_h = memory.get_byte(addr + 2);
+                byte data_l = memory.get_byte(addr + 1u);
+                byte data_h = memory.get_byte(addr + 2u);
                 string line_s = get_disasm_line(addr, opcode, data_l, data_h);
 
-                int global_addr = memory.get_global_addr(addr, Memory.AddrSpace.RAM);
+                var global_addr = memory.get_global_addr(addr, Memory.AddrSpace.RAM);
                 line_s += $"\t{mem_runs[global_addr]},{mem_reads[global_addr]},{mem_writes[global_addr]}";
 
                 if (labels.ContainsKey(addr & 0xffff))
@@ -283,9 +283,9 @@ namespace devector
             return output;
         }
 
-        public void mem_access(int addr, MemAccess mem_access, AddrSpace addr_space = AddrSpace.RAM)
+        public void mem_access(uint addr, MemAccess mem_access, AddrSpace addr_space = AddrSpace.RAM)
         {
-            addr = memory.get_global_addr((UInt16)(addr & 0xffff), addr_space);
+            addr = memory.get_global_addr(addr, addr_space);
             if (mem_access == MemAccess.RUN)
             {
                 mem_runs[addr] += 1;

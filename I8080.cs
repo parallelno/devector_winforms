@@ -53,11 +53,11 @@ namespace devector
 		const byte OPCODE_HLT = 0x76;
 
 		// memory + io interface
-		public delegate byte MemoryReadDelegate(int addr, Memory.AddrSpace addr_space = Memory.AddrSpace.RAM);
-		public delegate void MemoryWriteDelegate(int addr, byte value, AddrSpace addr_space = Memory.AddrSpace.RAM);
+		public delegate byte MemoryReadDelegate(uint addr, Memory.AddrSpace addr_space = Memory.AddrSpace.RAM);
+		public delegate void MemoryWriteDelegate(uint addr, byte value, AddrSpace addr_space = Memory.AddrSpace.RAM);
 		public delegate byte InputDelegate(byte port);
 		public delegate void OutputDelegate(byte port, byte value);
-		public delegate void DebugMemAccessDelegate(int addr, MemAccess mem_access, AddrSpace addr_space = AddrSpace.RAM);
+		public delegate void DebugMemAccessDelegate(uint addr, MemAccess mem_access, AddrSpace addr_space = AddrSpace.RAM);
 
 		MemoryReadDelegate memory_read;
 		MemoryWriteDelegate memory_write;
@@ -173,13 +173,13 @@ namespace devector
 			return op_code;
 		}
 
-		byte read_byte(int addr, AddrSpace addr_space = AddrSpace.RAM)
+		byte read_byte(uint addr, AddrSpace addr_space = AddrSpace.RAM)
 		{
 			debug_mem_access(addr, Debugger.MemAccess.READ, addr_space);
 			return memory_read(addr, addr_space);
 		}
 
-		void write_byte(int addr, byte value, AddrSpace addr_space = AddrSpace.RAM)
+		void write_byte(uint addr, byte value, AddrSpace addr_space = AddrSpace.RAM)
 		{
 			memory_write(addr, value, addr_space);
 			debug_mem_access(addr, Debugger.MemAccess.WRITE, addr_space);
@@ -526,7 +526,7 @@ namespace devector
 			}
 			else if (machine_cycle == 2)
 			{
-				W = read_byte(sp + 1, Memory.AddrSpace.STACK);
+				W = read_byte(sp + 1u, Memory.AddrSpace.STACK);
 			}
 			else if (machine_cycle == 3)
 			{

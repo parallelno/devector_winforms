@@ -179,13 +179,13 @@ namespace devector
 			textbox_crt_y.Text = $"{Hardware.display.raster_line}";
 
 			// stack data
-			textbox_sp_n6.Text = $"{Hardware.memory.get_word(Hardware.cpu.sp - 8, Memory.AddrSpace.STACK):X4}";
-			textbox_sp_n4.Text = $"{Hardware.memory.get_word(Hardware.cpu.sp - 6, Memory.AddrSpace.STACK):X4}";
-			textbox_sp_n2.Text = $"{Hardware.memory.get_word(Hardware.cpu.sp - 4, Memory.AddrSpace.STACK):X4}";
-			textbox_sp_0.Text = $"{Hardware.memory.get_word(Hardware.cpu.sp - 2, Memory.AddrSpace.STACK):X4}";
-			textbox_sp_p2.Text = $"{Hardware.memory.get_word(Hardware.cpu.sp, Memory.AddrSpace.STACK):X4}";
-			textbox_sp_p4.Text = $"{Hardware.memory.get_word(Hardware.cpu.sp + 2, Memory.AddrSpace.STACK):X4}";
-			textbox_sp_p6.Text = $"{Hardware.memory.get_word(Hardware.cpu.sp + 4, Memory.AddrSpace.STACK):X4}";
+			textbox_sp_n6.Text = $"{Hardware.memory.get_word((uint)(Hardware.cpu.sp - 8), Memory.AddrSpace.STACK):X4}";
+			textbox_sp_n4.Text = $"{Hardware.memory.get_word((uint)(Hardware.cpu.sp - 6), Memory.AddrSpace.STACK):X4}";
+			textbox_sp_n2.Text = $"{Hardware.memory.get_word((uint)(Hardware.cpu.sp - 4), Memory.AddrSpace.STACK):X4}";
+			textbox_sp_0.Text = $"{Hardware.memory.get_word((uint)(Hardware.cpu.sp - 2), Memory.AddrSpace.STACK):X4}";
+			textbox_sp_p2.Text = $"{Hardware.memory.get_word((uint)(Hardware.cpu.sp), Memory.AddrSpace.STACK):X4}";
+			textbox_sp_p4.Text = $"{Hardware.memory.get_word((uint)(Hardware.cpu.sp + 2), Memory.AddrSpace.STACK):X4}";
+			textbox_sp_p6.Text = $"{Hardware.memory.get_word((uint)(Hardware.cpu.sp + 4), Memory.AddrSpace.STACK):X4}";
 
 			picture_display.Invalidate();
 		}
@@ -240,7 +240,7 @@ namespace devector
 
 			Stopwatch stopwatch = Stopwatch.StartNew();
 
-			for(int i = 0; i<1000; i++)
+			//for(int i = 0; i<1000; i++)
 				Hardware.execute_frame();
 
 			stopwatch.Stop();

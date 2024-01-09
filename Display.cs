@@ -43,7 +43,7 @@ namespace devector
 
 		public const int FRAME_CC = FRAME_W * FRAME_H;
 
-		public Bitmap frame;// = new Bitmap(FRAME_W, FRAME_H, PixelFormat.Format32bppArgb);
+		public Bitmap frame;
 		public static UInt32[] data = new UInt32[FRAME_W * FRAME_H];
 		protected GCHandle data_handle { get; private set; }
 

@@ -4,15 +4,15 @@ namespace devector
 {
     public class Memory
     {
-        public static int MEMORY_MAIN_LEN = 64 * 1024;
-        public static int MEMORY_RAMDISK_LEN = 256 * 1024;
-        static int RAM_DISK_PAGE_LEN = 64 * 1024;
-        static int RAMDISK_MAX = 1;
+        public static uint MEMORY_MAIN_LEN = 64 * 1024;
+        public static uint MEMORY_RAMDISK_LEN = 256 * 1024;
+        static uint RAM_DISK_PAGE_LEN = 64 * 1024;
+        static uint RAMDISK_MAX = 1;
 
-        public static int GLOBAL_MEMORY_LEN = MEMORY_MAIN_LEN + MEMORY_RAMDISK_LEN * RAMDISK_MAX;
+        public static uint GLOBAL_MEMORY_LEN = MEMORY_MAIN_LEN + MEMORY_RAMDISK_LEN * RAMDISK_MAX;
         public static byte[] memory = new byte[GLOBAL_MEMORY_LEN];
 
-        static int ROM_LOAD_ADDR = 0x100;
+        static uint ROM_LOAD_ADDR = 0x100;
 
         public enum AddrSpace
         {
@@ -20,9 +20,9 @@ namespace devector
         }
 
         public bool mapping_mode_stack;
-        public int mapping_page_stack;
+        public uint mapping_page_stack;
         public byte mapping_mode_ram;
-        public int mapping_page_ram;
+        public uint mapping_page_ram;
 
         public Memory()
         {
@@ -39,22 +39,22 @@ namespace devector
             mapping_page_ram = 0;
         }
 
-        public byte get_byte(int addr, AddrSpace addr_space = AddrSpace.RAM)
+        public byte get_byte(uint addr, AddrSpace addr_space = AddrSpace.RAM)
         {
-            addr = get_global_addr((UInt16)(addr & 0xffff), addr_space);
+            addr = get_global_addr(addr, addr_space);
             return memory[addr];
         }
 
-        public void set_byte(int addr, byte value, AddrSpace addr_space = AddrSpace.RAM)
+        public void set_byte(uint addr, byte value, AddrSpace addr_space = AddrSpace.RAM)
         {
-            addr = get_global_addr((UInt16)(addr & 0xffff), addr_space);
+            addr = get_global_addr(addr, addr_space);
             memory[addr] = value;
         }
 
-        public int get_word(int addr, AddrSpace access = AddrSpace.RAM)
+        public int get_word(uint addr, AddrSpace access = AddrSpace.RAM)
         {
-            var addr0 = get_global_addr((UInt16)(addr & 0xffff), access);
-            var addr1 = get_global_addr((UInt16)((addr + 1) & 0xffff), access);
+            var addr0 = get_global_addr(addr, access);
+            var addr1 = get_global_addr(addr + 1, access);
             var lb = memory[addr0];
             var hb = memory[addr1];
             return hb << 8 | lb;
@@ -71,8 +71,12 @@ namespace devector
         }
 
         // converts an UInt16 addr to a global addr depending on the ram/stack mapping modes
-        public int get_global_addr(UInt16 addr, AddrSpace addr_space)
+        public uint get_global_addr(uint addr, AddrSpace addr_space)
         {
+            if (addr_space == AddrSpace.GLOBAL) return addr % (uint)(memory.Length);
+
+            addr &= 0xffff;
+
             if (addr_space == AddrSpace.STACK)
             {
                 if (mapping_mode_stack)

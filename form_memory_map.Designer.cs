@@ -1,6 +1,6 @@
 ﻿namespace devector
 {
-    partial class form_memory_map
+    partial class FormMemoryMap
     {
         /// <summary>
         /// Required designer variable.
@@ -28,7 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(form_memory_map));
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(FormMemoryMap));
             this.toolStrip1 = new System.Windows.Forms.ToolStrip();
             this.toolStripLabel1 = new System.Windows.Forms.ToolStripLabel();
             this.toolStripComboBox1 = new System.Windows.Forms.ToolStripComboBox();
@@ -48,7 +48,7 @@
             this.toolStripButton1});
             this.toolStrip1.Location = new System.Drawing.Point(0, 0);
             this.toolStrip1.Name = "toolStrip1";
-            this.toolStrip1.Size = new System.Drawing.Size(800, 25);
+            this.toolStrip1.Size = new System.Drawing.Size(1041, 25);
             this.toolStrip1.TabIndex = 0;
             this.toolStrip1.Text = "toolStrip1";
             // 
@@ -77,7 +77,7 @@
             this.picturebox_map.BackColor = System.Drawing.SystemColors.ActiveCaption;
             this.picturebox_map.Location = new System.Drawing.Point(0, 0);
             this.picturebox_map.Name = "picturebox_map";
-            this.picturebox_map.Size = new System.Drawing.Size(512, 5120);
+            this.picturebox_map.Size = new System.Drawing.Size(1024, 2560);
             this.picturebox_map.TabIndex = 1;
             this.picturebox_map.TabStop = false;
             this.picturebox_map.Paint += new System.Windows.Forms.PaintEventHandler(this.pictureBox1_Paint);
@@ -89,14 +89,14 @@
             this.panel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.panel1.Location = new System.Drawing.Point(0, 25);
             this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(800, 425);
+            this.panel1.Size = new System.Drawing.Size(1041, 693);
             this.panel1.TabIndex = 2;
             // 
             // form_memory_map
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(800, 450);
+            this.ClientSize = new System.Drawing.Size(1041, 718);
             this.Controls.Add(this.panel1);
             this.Controls.Add(this.toolStrip1);
             this.Name = "form_memory_map";

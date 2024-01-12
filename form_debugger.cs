@@ -1,31 +1,120 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Drawing;
+using System.Drawing.Imaging;
 using System.Linq;
+using System.Security;
 using System.Windows.Forms;
 using System.Xml.Linq;
-
+using static System.Windows.Forms.LinkLabel;
+using System.Collections.Generic;
+using System.Reflection.Emit;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace devector
 {
-	public partial class form_debugger : Form
+	public partial class FormDebugger : Form
 	{
-		const UInt16 BEFORE_ADDR_LINES = 6;
+		const UInt16 DISASM_LOOKUP_ADDR_LINE = 6; // the line idx where disired addr should be in the list
 		public UInt64 cc_last;
 		PictureBox picture_display;
 
-		public form_debugger(PictureBox _picture_display)
+		ContextMenuStrip disasm_context_menu;
+		//********************************************************************
+		//
+		//	color theme
+		//
+		//********************************************************************
+		const int DISASM_CELL_PADDING = 2;
+		const int DISASM_CELL_TEXT_OFFSET_Y = 0;
+
+
+		Brush disasm_brush_cell_text = Brushes.Black;
+		SolidBrush disasm_brush_selection = new SolidBrush(Color.FromArgb(80, 128, 200, 255));
+
+		const int cell_break_w = 20;
+		const int cell_addr_w = 54;
+		const int cell_code_w = 200;
+		const int cell_stats_w = 100;
+
+		public class DisAsmListItem
+		{
+			public string addr { get; set; }
+			public List<DisasmLine> code_line { get; set; }
+			public string stats { get; set; }
+			public string labels { get; set; }
+		}
+
+		public enum DisasmLineType
+		{
+			LABEL, OPCODE, COMMENT, SCALAR, OUTPUT, OPERAND_D, OPERAND_R
+		}
+		readonly private int[] disasm_text_offsets =
+		{
+			0, 20, 0, 0, 30, 0, 0
+		};
+
+		private SolidBrush[] disasm_text_colors = {
+			new SolidBrush(Color.FromArgb(255, 100, 80, 0)),
+			new SolidBrush(Color.Black),
+			new SolidBrush(Color.Green),
+			new SolidBrush(Color.Salmon),
+			new SolidBrush(Color.BlueViolet),
+			new SolidBrush(Color.Blue),
+			new SolidBrush(Color.CadetBlue),
+		};
+
+		Font disasm_mono_font = new Font("MS Gothic", 9.75f);
+		Font disasm_mono_font_small = new Font("MS Sans Serif", 8.0f);
+		//Font disasm_font = new Font("MS Sans Serif", 9.75f, FontStyle.Bold);
+		Font disasm_font = new Font("Consolas", 11f);
+
+
+		int listBox_disasm_item_h = 20;
+
+		//********************************************************************
+		//
+		//	resources
+		//
+		//********************************************************************
+
+		private System.Drawing.Image img_arrow_pc;
+		private System.Drawing.Image breakpoint_img;
+
+		public FormDebugger(PictureBox _picture_display)
 		{
 			InitializeComponent();
 
 			picture_display = _picture_display;
 
+			init_img_arrow_pc();
+
+			listBox_disasm_init();
 			update_form();
+
 			watch_list_init();
 			breakpoints_list_init();
 
 			watch_list_add();
 			breakpoints_list_add();
+
+			init_listing_context_menu();
+
+		}
+
+		void listBox_disasm_init()
+		{
+			listBox_disasm.DrawMode = System.Windows.Forms.DrawMode.OwnerDrawFixed;
+			listBox_disasm.ItemHeight = listBox_disasm_item_h;
+			listBox_disasm.DrawItem += new DrawItemEventHandler(listBox_disasm_DrawItem);
+			listBox_disasm.Resize += new EventHandler(listBox_disasm_Resize);
+		}
+
+		// init the indicator of the PC reg
+		private void init_img_arrow_pc()
+		{
+			img_arrow_pc = System.Drawing.Image.FromFile("C:\\Work\\Programming\\c#\\devector\\res\\images\\icons8-chevron-right-51.png");
+			breakpoint_img = System.Drawing.Image.FromFile("C:\\Work\\Programming\\c#\\devector\\res\\images\\icons8-stop-sign-94.png");
 		}
 
 		void watch_list_init()
@@ -55,6 +144,129 @@ namespace devector
 			bp_datagrid.Rows.Clear();
 			bp_datagrid.RowHeadersVisible = false;
 		}
+
+		private void listBox_disasm_Resize(object sender, EventArgs e)
+		{
+			// Force a redraw of all items
+			listBox_disasm.Invalidate();
+		}
+
+		private void listBox_disasm_DrawItem(object sender, DrawItemEventArgs e)
+		{
+			if (e.Index < 0) return; // return if no items
+
+			var item = listBox_disasm.Items[e.Index];
+			bool no_back = false;
+			if (item is DisAsmListItem)
+			{
+				DisAsmListItem entity = (DisAsmListItem)item;
+				if (entity.code_line.Count > 0 & (entity.code_line[0].type == DisasmLineType.COMMENT | entity.code_line[0].type == DisasmLineType.LABEL))
+				{
+					no_back = true;
+				}
+			}
+
+			int cell_w = e.Bounds.Width;
+			int cell_h = e.Bounds.Height;
+			int cell_stats_pos = e.Bounds.Left + cell_break_w + cell_addr_w + cell_code_w;
+			int cell_labels_w = cell_w - cell_break_w - cell_addr_w - cell_code_w - cell_stats_w;
+			int cell_labels_pos = cell_stats_pos + cell_stats_w;
+
+			// draw the background
+			// back white back
+			e.Graphics.FillRectangle(SystemBrushes.Info, e.Bounds.Left, e.Bounds.Top, cell_w, cell_h);
+			// breakpoints
+			int cell_back_pos_x = e.Bounds.Left;
+			e.Graphics.FillRectangle(SystemBrushes.ActiveBorder, cell_back_pos_x, e.Bounds.Top, cell_break_w - DISASM_CELL_PADDING, cell_h);
+			// addr
+			cell_back_pos_x += cell_break_w;
+			e.Graphics.FillRectangle(SystemBrushes.ControlLight, cell_back_pos_x, e.Bounds.Top, cell_addr_w - DISASM_CELL_PADDING, cell_h);
+
+			if (no_back == false)
+			{
+				// code
+				cell_back_pos_x += cell_addr_w;
+				e.Graphics.FillRectangle(SystemBrushes.Window, cell_back_pos_x, e.Bounds.Top, cell_code_w - DISASM_CELL_PADDING, cell_h);
+				// stats
+				cell_back_pos_x += cell_code_w;
+				e.Graphics.FillRectangle(SystemBrushes.ControlLight, cell_back_pos_x, e.Bounds.Top, cell_stats_w - DISASM_CELL_PADDING, cell_h);
+				// labels
+				cell_back_pos_x += cell_stats_w;
+				e.Graphics.FillRectangle(SystemBrushes.ControlLight, cell_back_pos_x, e.Bounds.Top, cell_labels_w - DISASM_CELL_PADDING, cell_h);
+			}
+
+			// draw a selection highlight
+			bool isSelected = ((e.State & DrawItemState.Selected) == DrawItemState.Selected);
+			if (isSelected) e.Graphics.FillRectangle(disasm_brush_selection, e.Bounds.Left, e.Bounds.Top, cell_w, cell_h);
+
+			// draw an text
+			int text_pos_x;
+			int text_pos_y;
+
+			if (item is DisAsmListItem)
+			{
+				DisAsmListItem entity = (DisAsmListItem)item;
+
+				// draw addr
+				text_pos_x = e.Bounds.Left + cell_break_w;
+				var text_pos = get_text_cell_pos(CellTextAligning.LEFT_BOTOM, e, entity.addr, disasm_mono_font, text_pos_x, cell_stats_w, listBox_disasm_item_h);
+				e.Graphics.DrawString(entity.addr, disasm_mono_font, disasm_brush_cell_text, new Rectangle(text_pos.x, text_pos.y, cell_addr_w, cell_h));
+
+				// draw code
+				text_pos_x += cell_addr_w;
+				SizeF text_boundary = new SizeF();
+				foreach (DisasmLine part in entity.code_line)
+				{
+					text_pos_x += (int)text_boundary.Width + disasm_text_offsets[(int)(part.type)];
+					text_boundary = e.Graphics.MeasureString(part.text, disasm_font);
+
+					var brush_disasm_line = disasm_text_colors[(int)(part.type)];
+					e.Graphics.DrawString(part.text, disasm_font, brush_disasm_line, new Rectangle(text_pos_x, (int)(e.Bounds.Top + listBox_disasm_item_h - text_boundary.Height + 3), cell_w, cell_h));
+				}
+
+				// draw stats
+				text_pos = get_text_cell_pos(CellTextAligning.CENTER_BOTTOM, e, entity.stats, disasm_mono_font_small, cell_stats_pos, cell_stats_w, listBox_disasm_item_h);
+				e.Graphics.DrawString(entity.stats, disasm_mono_font_small, disasm_brush_cell_text, new Rectangle(text_pos.x, text_pos.y, cell_stats_w, cell_h));
+				// draw argument labels
+				// cut the label stringto fit into the cell
+				text_pos = get_text_cell_pos(CellTextAligning.LEFT_BOTOM, e, entity.labels, disasm_mono_font, cell_labels_pos, cell_labels_w, listBox_disasm_item_h);
+				e.Graphics.DrawString(entity.labels, disasm_mono_font, disasm_brush_cell_text, new Rectangle(text_pos.x, text_pos.y, 1000, cell_h));
+			}
+		}
+		enum CellTextAligning
+		{
+			LEFT_BOTOM,
+			CENTER_BOTTOM
+		}
+		struct PosI
+		{
+			public int x, y; 
+		}
+		private PosI get_text_cell_pos(CellTextAligning aligning, DrawItemEventArgs e, string text, Font font, int cell_pos_x, int cell_w, int cell_h)
+		{
+			var text_boundary = e.Graphics.MeasureString(text, font);
+			PosI pos = new PosI();
+
+			if (aligning == CellTextAligning.LEFT_BOTOM)
+			{
+				pos.x = cell_pos_x;
+				pos.y = (int)(e.Bounds.Top + cell_h - text_boundary.Height + DISASM_CELL_TEXT_OFFSET_Y);
+			}
+			else
+			{
+				pos.x = (int)(cell_pos_x + cell_w/2 - text_boundary.Width / 2);
+				pos.y = (int)(e.Bounds.Top + cell_h - text_boundary.Height + DISASM_CELL_TEXT_OFFSET_Y);
+			}
+			return pos;
+		}
+
+		public struct DisasmLine
+		{
+			public DisasmLineType type;
+			public string text { get; set; }
+		}
+
+
 		void breakpoints_list_add()
 		{
 			DataGridViewRow row = new DataGridViewRow();
@@ -80,36 +292,36 @@ namespace devector
 			bp_datagrid.Rows.Add(row);
 		}
 
-		void update_form(int _addr = -1)
+		void update_form(int _addr = -1, UInt16 _before_addr_lines = DISASM_LOOKUP_ADDR_LINE)
 		{
+			var selected_line = listBox_disasm.SelectedIndex;
+
 			// disasm listing update
+			listBox_disasm.Items.Clear();
 
-			addr_list.Items.Clear();
-			disasm_list.Items.Clear();
-			execution_stats_list.Items.Clear();
-			arg_labels_list.Items.Clear();
-
+			// getting disasm data
 			UInt16 disasm_addr = _addr >= 0 ? (UInt16)(_addr) : Hardware.cpu.pc;
-			var visible_lines = disasm_list.ClientSize.Height / disasm_list.ItemHeight;
-			var disasm = Hardware.debugger.get_disasm(disasm_addr, visible_lines, BEFORE_ADDR_LINES);
-			var pc_icon_pos_y = -1;
+			var visible_lines = listBox_disasm.ClientSize.Height / listBox_disasm.ItemHeight;
+			var disasm = Hardware.debugger.get_disasm(disasm_addr, visible_lines, _before_addr_lines);
 
+			var pc_icon_pos_y = -1;
 			int rowIndex = 0;
+			// fill up the disasm list form
 			foreach (var line in disasm)
 			{
 				var split_list = line.Split('\t');
-
 				var addr_s = split_list[0];
-				addr_list.Items.Add(addr_s);
-				disasm_list.Items.Add(split_list[1]);
-				execution_stats_list.Items.Add(split_list[2]);
+				var labels = "";
 				if (split_list.Length > 3)
-					arg_labels_list.Items.Add(split_list[3]);
+					labels = split_list[3];
+
+				listBox_disasm.Items.Add(new DisAsmListItem { addr = addr_s, code_line = get_disasm_line(split_list[1]), stats = split_list[2], labels = labels });
 
 				int addr = Convert.ToInt32(addr_s.Substring(2), 16);
+
 				if (addr == Hardware.cpu.pc)
 				{
-					Rectangle rowBounds = addr_list.GetItemRectangle(rowIndex);
+					Rectangle rowBounds = listBox_disasm.GetItemRectangle(rowIndex);
 					pc_icon_pos_y = rowBounds.Location.Y + rowBounds.Size.Height / 4 * 3;
 				}
 
@@ -148,6 +360,7 @@ namespace devector
 			textbox_last_run.Text = $"{Hardware.cpu.cc - cc_last}";
 
 			// set the position of the cpu pc green arrow icon 
+			/*
 			img_arrow_pc.Visible = false;
 			if (pc_icon_pos_y >= 0)
 			{
@@ -156,6 +369,7 @@ namespace devector
 				pc_icon_pos.Y = pc_icon_pos_y - img_arrow_pc.Height / 2;
 				img_arrow_pc.Location = pc_icon_pos;
 			}
+			*/
 
 			// mapping
 			var mapping_mode_ram = Hardware.memory.mapping_mode_ram;
@@ -187,7 +401,46 @@ namespace devector
 			textbox_sp_p4.Text = $"{Hardware.memory.get_word((uint)(Hardware.cpu.sp + 2), Memory.AddrSpace.STACK):X4}";
 			textbox_sp_p6.Text = $"{Hardware.memory.get_word((uint)(Hardware.cpu.sp + 4), Memory.AddrSpace.STACK):X4}";
 
+			listBox_disasm.SelectedIndex = selected_line;
+
 			picture_display.Invalidate();
+		}
+
+		private List<DisasmLine> get_disasm_line(string code_s)
+		{
+			var output = new List<DisasmLine>();
+			var split_list = code_s.Split(' ');
+
+			string operand_r = "";
+			int is_operand_r = 0;
+
+			foreach (string item in split_list)
+			{
+				if (is_operand_r == 1 && !(item.Length == 1 || (item.Length > 1 && item[1] == ',')))
+				{
+					is_operand_r = 2;
+					output.Add(new DisasmLine { type = DisasmLineType.OPERAND_R, text = operand_r });
+				}
+				if (item[0] == '_')
+				{
+					output.Add(new DisasmLine { type = DisasmLineType.OPCODE, text = item.Substring(1)});
+				}
+				else if (item[0] >= (int)'0' && item[0] <= (int)'9')
+				{
+					output.Add(new DisasmLine { type = DisasmLineType.OPERAND_D, text = item });
+				}
+				else if (item.Length == 1 || (item.Length > 1 && item[1] == ',') || (item.Length > 2 && item[2] == ','))
+				{
+					is_operand_r = 1;
+					operand_r += item;
+				}
+            }
+            // flash if the operand_r was the last one
+            if (is_operand_r == 1)
+            {
+                output.Add(new DisasmLine { type = DisasmLineType.OPERAND_R, text = operand_r });
+            }
+            return output;
 		}
 
 		public static bool IsHexNumber(string input)
@@ -247,7 +500,126 @@ namespace devector
 			TimeSpan elapsedTime = stopwatch.Elapsed;
 			label5.Text = $"Elapsed time: {elapsedTime}";
 
-            update_form();
-        }
+			update_form();
+		}
+
+
+		private void init_listing_context_menu()
+		{
+			ToolStripMenuItem item1 = new ToolStripMenuItem("Copy");
+			ToolStripMenuItem item2 = new ToolStripMenuItem("Show the current break");
+			ToolStripMenuItem item3 = new ToolStripMenuItem("Run to the selected line");
+			ToolStripMenuItem item4 = new ToolStripMenuItem("Add/Remove a breakpoint");
+			ToolStripMenuItem item5 = new ToolStripMenuItem("Remove all breakpoints");
+			ToolStripSeparator separator = new ToolStripSeparator();
+
+			disasm_context_menu = new ContextMenuStrip();
+			disasm_context_menu.Items.AddRange(new ToolStripItem[] { item1, separator, item2, item3, separator, item4, item5, });
+
+			listBox_disasm.ContextMenuStrip = disasm_context_menu;
+			item1.Click += disasm_context_copy;
+			item2.Click += disasm_context_show_current_break;
+			item3.Click += disasm_context_to_selected_line;
+			item4.Click += disasm_context_add_remove_break;
+			item5.Click += disasm_context_remove_all_breaks;
+		}
+
+		private void disasm_context_copy(object sender, EventArgs e)
+		{
+			try
+			{
+				var selected_idx = listBox_disasm.SelectedIndex;
+				var item = listBox_disasm.Items[selected_idx] as DisAsmListItem;
+				string text = item.addr + " ";
+				foreach (DisasmLine part in item.code_line)
+				{
+					text += part.text + " ";
+				}
+
+				Clipboard.SetText(text);
+			}
+			catch (SecurityException ex)
+			{
+				MessageBox.Show("Clipboard access is restricted.");
+			}
+		}
+		private void disasm_context_show_current_break(object sender, EventArgs e)
+		{
+			// Code for Item 1 click
+		}
+		private void disasm_context_to_selected_line(object sender, EventArgs e)
+		{
+			// get the addr of the selected line
+			var addr_idx = listBox_disasm.SelectedIndex;
+			var addr_s = (listBox_disasm.Items[addr_idx] as DisAsmListItem).addr;
+
+			UInt16 addr = Convert.ToUInt16(addr_s, 16);
+			
+			// TODO: update
+			//Hardware.debugger.test_breakpoint = addr;
+
+		}
+		private void disasm_context_add_remove_break(object sender, EventArgs e)
+		{
+			// Code for Item 1 click
+		}
+		private void disasm_context_remove_all_breaks(object sender, EventArgs e)
+		{
+			MessageBox.Show("Action performed!");
+		}
+
+		private void disasm_list_mouse_down(object sender, MouseEventArgs e)
+		{
+			if (e.Button == MouseButtons.Right)
+			{
+				int index = (sender as ListBox).IndexFromPoint(e.Location);
+				if (index != ListBox.NoMatches)
+				{
+					listBox_disasm.SelectedIndex = index;
+				}
+			}
+		}
+
+		// TODO: this is a text on how to draw icons. remove it after using
+		private void main_panel_Panel2_Paint(object sender, PaintEventArgs e)
+		{
+			// Get the Graphics object
+			Graphics g = e.Graphics;
+
+			// Set the transparency level (0 to 1, where 1 is fully opaque)
+			float transparency = 1.0f;
+
+			// Create image attributes and set the opacity
+			ImageAttributes attributes = new ImageAttributes();
+			ColorMatrix matrix = new ColorMatrix { Matrix33 = transparency };
+			attributes.SetColorMatrix(matrix);
+
+			// Draw the first image (fully opaque)
+			g.DrawImage(breakpoint_img, new Rectangle(500, 20, breakpoint_img.Width / 2, breakpoint_img.Height / 2));
+
+			// Draw the second image (semi-transparent)
+			g.DrawImage(img_arrow_pc, new Rectangle(500, 0, img_arrow_pc.Width, img_arrow_pc.Height), 0, 0, img_arrow_pc.Width, img_arrow_pc.Height, GraphicsUnit.Pixel, attributes);
+
+		}
+
+		private void listBox_disasm_KeyDown(object sender, KeyEventArgs e)
+		{
+			if (listBox_disasm.Focused && (e.KeyCode == Keys.Up || e.KeyCode == Keys.Down))
+			{
+                var visible_lines = listBox_disasm.ClientSize.Height / listBox_disasm.ItemHeight;
+				var selected_idx = listBox_disasm.SelectedIndex;
+
+                if (e.KeyCode == Keys.Up && selected_idx == 0)
+				{
+					var addr_s = (listBox_disasm.Items[0] as DisAsmListItem).addr;
+                    update_form((UInt16)(Convert.ToInt32(addr_s, 16)), 1);
+                }
+				else if (e.KeyCode == Keys.Down && selected_idx == visible_lines-1)
+				{
+                    var addr_s = (listBox_disasm.Items[1] as DisAsmListItem).addr;
+                    update_form((UInt16)(Convert.ToInt32(addr_s, 16)), 0);
+                }
+			}
+		}
 	}
 }

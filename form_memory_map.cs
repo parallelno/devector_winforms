@@ -6,12 +6,12 @@ using System.Windows.Forms;
 
 namespace devector
 {
-    public partial class form_memory_map : Form
+    public partial class FormMemoryMap : Form
     {
         private const int BITS_IN_BYTE = 8;
 
-        private const int BLOCKS_W = 2;
-        private const int BLOCKS_H = 4 * 5;
+        private const int BLOCKS_W = 4;
+        private const int BLOCKS_H = 2 * 5;
         private const int BLOCK_PXL_SIZE = 256;
         private const int BLOCK_BYTES_W = BLOCK_PXL_SIZE / BITS_IN_BYTE;
         private const int BLOCK_BYTES_H = BLOCK_PXL_SIZE;
@@ -25,7 +25,13 @@ namespace devector
         public static UInt32[] map_data = new UInt32[MAP_W * MAP_H];
         protected GCHandle data_handle { get; private set; }
 
-        public form_memory_map()
+        UInt32 color_bit_on01 = (UInt32)(Color.Bisque.ToArgb());
+        UInt32 color_bit_on02 = (UInt32)(Color.Beige.ToArgb());
+        UInt32 color_bit_off0 = (UInt32)(Color.Black.ToArgb());
+        UInt32 color_bit_off1 = (UInt32)(Color.FromArgb(20, 20, 30).ToArgb());
+        UInt32 color_bit_off_offset_bank_64k = (UInt32)(Color.FromArgb(15, 15, 15).ToArgb());// make every second 64 KB block a bit brighter to visually split up the ram and the ram-disk banks
+
+        public FormMemoryMap()
         {
             InitializeComponent();
             init();
@@ -46,10 +52,6 @@ namespace devector
 
         private void draw_map()
         {
-            UInt32 color_bit_on = (UInt32)(Color.Bisque.ToArgb());
-            UInt32 color_bit_off0 = (UInt32)(Color.Black.ToArgb());
-            UInt32 color_bit_off1 = (UInt32)(Color.FromArgb(20, 20, 30).ToArgb());
-
             int blockWidth = BLOCK_PXL_SIZE;
             int blockHeight = BLOCK_PXL_SIZE;
 
@@ -60,12 +62,19 @@ namespace devector
                     int blockX = block_horiz_idx * blockWidth;
                     int blockY = block_vert_idx * blockHeight;
 
-                    var color_bit_off = ((block_horiz_idx % 2) + (block_vert_idx % 2)) % 2 == 0 ? color_bit_off0 : color_bit_off1;
+                    var block_idx = block_vert_idx * BLOCKS_W + block_horiz_idx;
+                    var every_second_block = ((block_horiz_idx % 2) + (block_vert_idx % 2)) % 2 == 0;
+                    var color_bit_off = every_second_block ? color_bit_off0 : color_bit_off1;
+                    
+                    color_bit_off += ((block_idx / 4) & 2) == 0 ? color_bit_off_offset_bank_64k : 0; // make every second 64 KB block a bit brighter to visually split up the ram and the ram-disk banks
+
+                    var color_bit_on = every_second_block ? color_bit_on01 : color_bit_on02;
 
                     draw_memory_block(block_vert_idx * BLOCKS_W + block_horiz_idx, blockX, blockY, color_bit_on, color_bit_off);
                 }
             }
         }
+        // draw a 8 KB block
         private void draw_memory_block(int blockIndex, int x, int y, UInt32 color_bit_on, UInt32 color_bit_off)
         {
             for (int byte_vert_idx = 0; byte_vert_idx < BLOCK_BYTES_H; byte_vert_idx++)

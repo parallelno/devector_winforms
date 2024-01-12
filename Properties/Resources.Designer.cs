@@ -59,15 +59,5 @@ namespace devector.Properties {
                 resourceCulture = value;
             }
         }
-        
-        /// <summary>
-        ///   Looks up a localized resource of type System.Drawing.Bitmap.
-        /// </summary>
-        internal static System.Drawing.Bitmap green_arrow_icon_small {
-            get {
-                object obj = ResourceManager.GetObject("green arrow icon small", resourceCulture);
-                return ((System.Drawing.Bitmap)(obj));
-            }
-        }
     }
 }

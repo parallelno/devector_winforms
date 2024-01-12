@@ -7,8 +7,10 @@ namespace devector
 	{
 		private Hardware hardware;
 		private RecentFileManager recentFileManager = new RecentFileManager();
+		FormDebugger form_debugger;
+		FormMemoryMap form_memory_map;
 
-		public form_main(Hardware _hardware)
+        public form_main(Hardware _hardware)
 		{
 			InitializeComponent();
 			hardware = _hardware;
@@ -39,7 +41,9 @@ namespace devector
 			UpdateRecentFilesMenu();
 
 			hardware.load_rom(path);
-		}
+            
+			picture_display.Invalidate();
+        }
 
 		private void aboutToolStripMenuItem_Click(object sender, EventArgs e)
 		{
@@ -56,18 +60,32 @@ namespace devector
 			{
 				OpenFile(openFileDialog.FileName);
 			}
-		}
+        }
 
 		private void memoryMapToolStripMenuItem_Click(object sender, EventArgs e)
 		{
-			form_memory_map memoryMap = new form_memory_map();
-			memoryMap.Show();
-		}
+            if (form_debugger == null || form_debugger.IsDisposed)
+            {
+                FormMemoryMap form_memory_map = new FormMemoryMap();
+                form_memory_map.Show();
+            }
+            else
+            {
+                form_memory_map.Focus();
+            }
+        }
 
 		private void debuggerToolStripMenuItem_Click(object sender, EventArgs e)
 		{
-			form_debugger memoryMap = new form_debugger(picture_display);
-			memoryMap.Show();
+            if (form_debugger == null || form_debugger.IsDisposed)
+			{
+                form_debugger = new FormDebugger(picture_display);
+                form_debugger.Show();
+            }
+			else 
+			{
+                form_debugger.Focus();
+            }
 		}
 	}
 }

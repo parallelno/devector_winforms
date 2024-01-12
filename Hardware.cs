@@ -55,8 +55,7 @@ namespace devector
         {
             do
             {
-                display.rasterize();
-                cpu.execute_machine_cycle(display.T50HZ);
+                execute_instruction();
             } while (!display.T50HZ);
         }
 

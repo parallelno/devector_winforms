@@ -51,10 +51,10 @@ namespace devector
             memory[addr] = value;
         }
 
-        public int get_word(uint addr, AddrSpace access = AddrSpace.RAM)
+        public int get_word(uint addr, AddrSpace addr_space = AddrSpace.RAM)
         {
-            var addr0 = get_global_addr(addr, access);
-            var addr1 = get_global_addr(addr + 1, access);
+            var addr0 = get_global_addr(addr, addr_space);
+            var addr1 = get_global_addr(addr + 1, addr_space);
             var lb = memory[addr0];
             var hb = memory[addr1];
             return hb << 8 | lb;

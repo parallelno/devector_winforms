@@ -6,6 +6,9 @@ namespace devector
 {
     public class Debugger
     {
+
+        BreakPoints breakPoints;
+
         public enum MemAccess
         {
             RUN, READ, WRITE
@@ -107,12 +110,12 @@ namespace devector
 
             if (cmd_lens[_opcode] == 2)
             {
-                output += $" {_data_l:X2}";
+                output += $" 0x{_data_l:X2}";
             }
             else if (cmd_lens[_opcode] == 3)
             {
                 int data_w = (_data_h << 8) + _data_l;
-                output += $" {data_w:X4}";
+                output += $" 0x{data_w:X4}";
             }
             return output;
         }
@@ -145,19 +148,21 @@ namespace devector
         const byte OPCODE_PCHL = 0xE9;
 
         // disassembles a data byte
+        // '_' prefix goes before every opcode
         string get_disasm_db_line(int _addr, byte _data)
         {
-            return $"0x{_addr:X4}" + "\t" + $"DB {_data:X2}";
+            return $"0x{_addr:X4}\t_DB 0x{_data:X2}";
         }
 
         // disassembles an instruction
+        // '_' prefix goes before every opcode
         string get_disasm_line(int _addr, byte _opcode, byte _data_l, byte _data_h)
         {
             cmd[CMD_OPCODE] = _opcode;
             cmd[CMD_OP_L] = _data_l;
             cmd[CMD_OP_H] = _data_h;
 
-            string output = $"0x{_addr:X4}" + "\t" + get_mnemonic(_opcode, _data_l, _data_h);
+            string output = $"0x{_addr:X4}\t_{get_mnemonic(_opcode, _data_l, _data_h)}";
 
             return output;
         }

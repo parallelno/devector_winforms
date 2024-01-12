@@ -1,6 +1,6 @@
 ﻿namespace devector
 {
-    partial class form_debugger
+    partial class FormDebugger
     {
         /// <summary>
         /// Required designer variable.
@@ -28,20 +28,15 @@
         /// </summary>
         private void InitializeComponent()
         {
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(form_debugger));
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(FormDebugger));
             this.main_panel = new System.Windows.Forms.SplitContainer();
             this.disasm_group = new System.Windows.Forms.GroupBox();
             this.panel2 = new System.Windows.Forms.Panel();
-            this.img_arrow_pc = new System.Windows.Forms.PictureBox();
             this.vScrollBar1 = new System.Windows.Forms.VScrollBar();
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
-            this.execution_stats_list = new System.Windows.Forms.ListBox();
-            this.arg_labels_list = new System.Windows.Forms.ListBox();
-            this.disasm_list = new System.Windows.Forms.ListBox();
-            this.breakpoints_list = new System.Windows.Forms.ListBox();
-            this.addr_list = new System.Windows.Forms.ListBox();
-            this.search_box = new System.Windows.Forms.TextBox();
+            this.listBox_disasm = new System.Windows.Forms.ListBox();
             this.label5 = new System.Windows.Forms.Label();
+            this.search_box = new System.Windows.Forms.TextBox();
             this.middle_panel = new System.Windows.Forms.Panel();
             this.breakpoints_watch = new System.Windows.Forms.GroupBox();
             this.splitContainer2 = new System.Windows.Forms.SplitContainer();
@@ -132,7 +127,6 @@
             this.main_panel.SuspendLayout();
             this.disasm_group.SuspendLayout();
             this.panel2.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.img_arrow_pc)).BeginInit();
             this.tableLayoutPanel1.SuspendLayout();
             this.middle_panel.SuspendLayout();
             this.breakpoints_watch.SuspendLayout();
@@ -166,10 +160,12 @@
             // 
             // main_panel.Panel2
             // 
-            this.main_panel.Panel2.Controls.Add(this.label5);
+            this.main_panel.Panel2.BackColor = System.Drawing.Color.Transparent;
             this.main_panel.Panel2.Controls.Add(this.middle_panel);
-            this.main_panel.Size = new System.Drawing.Size(1177, 712);
-            this.main_panel.SplitterDistance = 531;
+            this.main_panel.Panel2.Font = new System.Drawing.Font("Consolas", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.main_panel.Panel2.Paint += new System.Windows.Forms.PaintEventHandler(this.main_panel_Panel2_Paint);
+            this.main_panel.Size = new System.Drawing.Size(1259, 712);
+            this.main_panel.SplitterDistance = 567;
             this.main_panel.TabIndex = 0;
             // 
             // disasm_group
@@ -180,142 +176,72 @@
             this.disasm_group.ForeColor = System.Drawing.SystemColors.ControlDarkDark;
             this.disasm_group.Location = new System.Drawing.Point(0, 0);
             this.disasm_group.Name = "disasm_group";
-            this.disasm_group.Size = new System.Drawing.Size(531, 712);
+            this.disasm_group.Size = new System.Drawing.Size(567, 712);
             this.disasm_group.TabIndex = 1;
             this.disasm_group.TabStop = false;
             this.disasm_group.Text = "Disasm";
             // 
             // panel2
             // 
-            this.panel2.Controls.Add(this.img_arrow_pc);
             this.panel2.Controls.Add(this.vScrollBar1);
             this.panel2.Controls.Add(this.tableLayoutPanel1);
             this.panel2.Dock = System.Windows.Forms.DockStyle.Fill;
             this.panel2.Location = new System.Drawing.Point(3, 36);
             this.panel2.Name = "panel2";
-            this.panel2.Size = new System.Drawing.Size(525, 673);
+            this.panel2.Size = new System.Drawing.Size(561, 673);
             this.panel2.TabIndex = 0;
-            // 
-            // img_arrow_pc
-            // 
-            this.img_arrow_pc.Image = global::devector.Properties.Resources.green_arrow_icon_small;
-            this.img_arrow_pc.InitialImage = ((System.Drawing.Image)(resources.GetObject("img_arrow_pc.InitialImage")));
-            this.img_arrow_pc.Location = new System.Drawing.Point(0, 20);
-            this.img_arrow_pc.Name = "img_arrow_pc";
-            this.img_arrow_pc.Size = new System.Drawing.Size(24, 27);
-            this.img_arrow_pc.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
-            this.img_arrow_pc.TabIndex = 1;
-            this.img_arrow_pc.TabStop = false;
             // 
             // vScrollBar1
             // 
             this.vScrollBar1.Dock = System.Windows.Forms.DockStyle.Right;
-            this.vScrollBar1.Location = new System.Drawing.Point(506, 0);
+            this.vScrollBar1.Location = new System.Drawing.Point(542, 0);
             this.vScrollBar1.Name = "vScrollBar1";
             this.vScrollBar1.Size = new System.Drawing.Size(19, 673);
             this.vScrollBar1.TabIndex = 0;
             // 
             // tableLayoutPanel1
             // 
-            this.tableLayoutPanel1.ColumnCount = 5;
-            this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 20F));
-            this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 60F));
-            this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 66.66666F));
-            this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 80F));
-            this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 33.33333F));
-            this.tableLayoutPanel1.Controls.Add(this.execution_stats_list, 0, 0);
-            this.tableLayoutPanel1.Controls.Add(this.arg_labels_list, 0, 0);
-            this.tableLayoutPanel1.Controls.Add(this.disasm_list, 0, 0);
-            this.tableLayoutPanel1.Controls.Add(this.breakpoints_list, 0, 0);
-            this.tableLayoutPanel1.Controls.Add(this.addr_list, 0, 0);
+            this.tableLayoutPanel1.ColumnCount = 1;
+            this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 561F));
+            this.tableLayoutPanel1.Controls.Add(this.listBox_disasm, 0, 0);
+            this.tableLayoutPanel1.Controls.Add(this.label5, 0, 1);
             this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel1.Location = new System.Drawing.Point(0, 0);
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
-            this.tableLayoutPanel1.RowCount = 1;
+            this.tableLayoutPanel1.RowCount = 2;
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel1.Size = new System.Drawing.Size(525, 673);
+            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
+            this.tableLayoutPanel1.Size = new System.Drawing.Size(561, 673);
             this.tableLayoutPanel1.TabIndex = 3;
             // 
-            // execution_stats_list
+            // listBox_disasm
             // 
-            this.execution_stats_list.BackColor = System.Drawing.SystemColors.ControlLight;
-            this.execution_stats_list.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            this.execution_stats_list.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.execution_stats_list.FormattingEnabled = true;
-            this.execution_stats_list.Location = new System.Drawing.Point(326, 3);
-            this.execution_stats_list.Name = "execution_stats_list";
-            this.execution_stats_list.RightToLeft = System.Windows.Forms.RightToLeft.Yes;
-            this.execution_stats_list.SelectionMode = System.Windows.Forms.SelectionMode.None;
-            this.execution_stats_list.Size = new System.Drawing.Size(74, 667);
-            this.execution_stats_list.TabIndex = 5;
+            this.listBox_disasm.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.listBox_disasm.FormattingEnabled = true;
+            this.listBox_disasm.Location = new System.Drawing.Point(3, 3);
+            this.listBox_disasm.Name = "listBox_disasm";
+            this.listBox_disasm.Size = new System.Drawing.Size(555, 647);
+            this.listBox_disasm.TabIndex = 3;
+            this.listBox_disasm.KeyDown += new System.Windows.Forms.KeyEventHandler(this.listBox_disasm_KeyDown);
+            this.listBox_disasm.MouseDown += new System.Windows.Forms.MouseEventHandler(this.disasm_list_mouse_down);
             // 
-            // arg_labels_list
+            // label5
             // 
-            this.arg_labels_list.BackColor = System.Drawing.SystemColors.ControlLight;
-            this.arg_labels_list.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            this.arg_labels_list.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.arg_labels_list.FormattingEnabled = true;
-            this.arg_labels_list.Location = new System.Drawing.Point(406, 3);
-            this.arg_labels_list.Name = "arg_labels_list";
-            this.arg_labels_list.RightToLeft = System.Windows.Forms.RightToLeft.Yes;
-            this.arg_labels_list.SelectionMode = System.Windows.Forms.SelectionMode.None;
-            this.arg_labels_list.Size = new System.Drawing.Size(116, 667);
-            this.arg_labels_list.TabIndex = 6;
-            // 
-            // disasm_list
-            // 
-            this.disasm_list.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            this.disasm_list.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.disasm_list.FormattingEnabled = true;
-            this.disasm_list.Location = new System.Drawing.Point(83, 3);
-            this.disasm_list.Name = "disasm_list";
-            this.disasm_list.RightToLeft = System.Windows.Forms.RightToLeft.No;
-            this.disasm_list.Size = new System.Drawing.Size(237, 667);
-            this.disasm_list.TabIndex = 1;
-            // 
-            // breakpoints_list
-            // 
-            this.breakpoints_list.BackColor = System.Drawing.SystemColors.ControlLight;
-            this.breakpoints_list.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            this.breakpoints_list.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.breakpoints_list.FormattingEnabled = true;
-            this.breakpoints_list.Location = new System.Drawing.Point(3, 3);
-            this.breakpoints_list.Name = "breakpoints_list";
-            this.breakpoints_list.RightToLeft = System.Windows.Forms.RightToLeft.Yes;
-            this.breakpoints_list.SelectionMode = System.Windows.Forms.SelectionMode.None;
-            this.breakpoints_list.Size = new System.Drawing.Size(14, 667);
-            this.breakpoints_list.TabIndex = 4;
-            // 
-            // addr_list
-            // 
-            this.addr_list.BackColor = System.Drawing.SystemColors.ControlLight;
-            this.addr_list.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            this.addr_list.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.addr_list.Font = new System.Drawing.Font("MS Gothic", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.addr_list.FormattingEnabled = true;
-            this.addr_list.Location = new System.Drawing.Point(23, 3);
-            this.addr_list.Name = "addr_list";
-            this.addr_list.SelectionMode = System.Windows.Forms.SelectionMode.None;
-            this.addr_list.Size = new System.Drawing.Size(54, 667);
-            this.addr_list.TabIndex = 2;
+            this.label5.AutoSize = true;
+            this.label5.Location = new System.Drawing.Point(3, 653);
+            this.label5.Name = "label5";
+            this.label5.Size = new System.Drawing.Size(35, 13);
+            this.label5.TabIndex = 1;
+            this.label5.Text = "label5";
             // 
             // search_box
             // 
             this.search_box.Dock = System.Windows.Forms.DockStyle.Top;
             this.search_box.Location = new System.Drawing.Point(3, 16);
             this.search_box.Name = "search_box";
-            this.search_box.Size = new System.Drawing.Size(525, 20);
+            this.search_box.Size = new System.Drawing.Size(561, 20);
             this.search_box.TabIndex = 2;
             this.search_box.KeyDown += new System.Windows.Forms.KeyEventHandler(this.search_box_KeyDown);
-            // 
-            // label5
-            // 
-            this.label5.AutoSize = true;
-            this.label5.Location = new System.Drawing.Point(424, 310);
-            this.label5.Name = "label5";
-            this.label5.Size = new System.Drawing.Size(35, 13);
-            this.label5.TabIndex = 1;
-            this.label5.Text = "label5";
             // 
             // middle_panel
             // 
@@ -340,7 +266,7 @@
             // splitContainer2
             // 
             this.splitContainer2.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.splitContainer2.Location = new System.Drawing.Point(3, 16);
+            this.splitContainer2.Location = new System.Drawing.Point(3, 22);
             this.splitContainer2.Name = "splitContainer2";
             this.splitContainer2.Orientation = System.Windows.Forms.Orientation.Horizontal;
             // 
@@ -351,8 +277,8 @@
             // splitContainer2.Panel2
             // 
             this.splitContainer2.Panel2.Controls.Add(this.groupBox2);
-            this.splitContainer2.Size = new System.Drawing.Size(399, 512);
-            this.splitContainer2.SplitterDistance = 251;
+            this.splitContainer2.Size = new System.Drawing.Size(399, 506);
+            this.splitContainer2.SplitterDistance = 236;
             this.splitContainer2.TabIndex = 0;
             // 
             // groupBox1
@@ -362,7 +288,7 @@
             this.groupBox1.ForeColor = System.Drawing.SystemColors.ControlDarkDark;
             this.groupBox1.Location = new System.Drawing.Point(0, 0);
             this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Size = new System.Drawing.Size(399, 251);
+            this.groupBox1.Size = new System.Drawing.Size(399, 236);
             this.groupBox1.TabIndex = 0;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Breakpoints";
@@ -380,9 +306,9 @@
             this.br_condition});
             this.bp_datagrid.Dock = System.Windows.Forms.DockStyle.Fill;
             this.bp_datagrid.GridColor = System.Drawing.SystemColors.ControlText;
-            this.bp_datagrid.Location = new System.Drawing.Point(3, 16);
+            this.bp_datagrid.Location = new System.Drawing.Point(3, 22);
             this.bp_datagrid.Name = "bp_datagrid";
-            this.bp_datagrid.Size = new System.Drawing.Size(393, 232);
+            this.bp_datagrid.Size = new System.Drawing.Size(393, 211);
             this.bp_datagrid.TabIndex = 0;
             // 
             // br_active
@@ -401,7 +327,7 @@
             this.br_access.Name = "br_access";
             this.br_access.ReadOnly = true;
             this.br_access.Resizable = System.Windows.Forms.DataGridViewTriState.False;
-            this.br_access.Width = 67;
+            this.br_access.Width = 88;
             // 
             // br_address
             // 
@@ -410,7 +336,7 @@
             this.br_address.Name = "br_address";
             this.br_address.ReadOnly = true;
             this.br_address.Resizable = System.Windows.Forms.DataGridViewTriState.False;
-            this.br_address.Width = 70;
+            this.br_address.Width = 97;
             // 
             // br_condition
             // 
@@ -426,7 +352,7 @@
             this.groupBox2.ForeColor = System.Drawing.SystemColors.ControlDarkDark;
             this.groupBox2.Location = new System.Drawing.Point(0, 0);
             this.groupBox2.Name = "groupBox2";
-            this.groupBox2.Size = new System.Drawing.Size(399, 257);
+            this.groupBox2.Size = new System.Drawing.Size(399, 266);
             this.groupBox2.TabIndex = 0;
             this.groupBox2.TabStop = false;
             this.groupBox2.Text = "Watch";
@@ -442,9 +368,9 @@
             this.value_column_name});
             this.watch_datagrid.Dock = System.Windows.Forms.DockStyle.Fill;
             this.watch_datagrid.GridColor = System.Drawing.SystemColors.ControlText;
-            this.watch_datagrid.Location = new System.Drawing.Point(3, 16);
+            this.watch_datagrid.Location = new System.Drawing.Point(3, 22);
             this.watch_datagrid.Name = "watch_datagrid";
-            this.watch_datagrid.Size = new System.Drawing.Size(393, 238);
+            this.watch_datagrid.Size = new System.Drawing.Size(393, 241);
             this.watch_datagrid.TabIndex = 0;
             // 
             // watch_column_name
@@ -933,6 +859,7 @@
             // label3
             // 
             this.label3.AutoSize = true;
+            this.label3.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F);
             this.label3.ForeColor = System.Drawing.SystemColors.ControlText;
             this.label3.Location = new System.Drawing.Point(2, 159);
             this.label3.Name = "label3";
@@ -955,6 +882,7 @@
             // label2
             // 
             this.label2.AutoSize = true;
+            this.label2.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F);
             this.label2.ForeColor = System.Drawing.SystemColors.ControlText;
             this.label2.Location = new System.Drawing.Point(12, 140);
             this.label2.Name = "label2";
@@ -977,6 +905,7 @@
             // label12
             // 
             this.label12.AutoSize = true;
+            this.label12.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F);
             this.label12.ForeColor = System.Drawing.SystemColors.ControlText;
             this.label12.Location = new System.Drawing.Point(7, 121);
             this.label12.Name = "label12";
@@ -1061,6 +990,7 @@
             // label_flag_c
             // 
             this.label_flag_c.AutoSize = true;
+            this.label_flag_c.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F);
             this.label_flag_c.ForeColor = System.Drawing.SystemColors.ControlText;
             this.label_flag_c.Location = new System.Drawing.Point(23, 21);
             this.label_flag_c.Name = "label_flag_c";
@@ -1071,6 +1001,7 @@
             // label_flag_z
             // 
             this.label_flag_z.AutoSize = true;
+            this.label_flag_z.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F);
             this.label_flag_z.ForeColor = System.Drawing.SystemColors.ControlText;
             this.label_flag_z.Location = new System.Drawing.Point(23, 40);
             this.label_flag_z.Name = "label_flag_z";
@@ -1081,6 +1012,7 @@
             // label_flag_p
             // 
             this.label_flag_p.AutoSize = true;
+            this.label_flag_p.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F);
             this.label_flag_p.ForeColor = System.Drawing.SystemColors.ControlText;
             this.label_flag_p.Location = new System.Drawing.Point(23, 59);
             this.label_flag_p.Name = "label_flag_p";
@@ -1091,6 +1023,7 @@
             // label_flag_s
             // 
             this.label_flag_s.AutoSize = true;
+            this.label_flag_s.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F);
             this.label_flag_s.ForeColor = System.Drawing.SystemColors.ControlText;
             this.label_flag_s.Location = new System.Drawing.Point(23, 78);
             this.label_flag_s.Name = "label_flag_s";
@@ -1101,6 +1034,7 @@
             // label_flag_ac
             // 
             this.label_flag_ac.AutoSize = true;
+            this.label_flag_ac.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F);
             this.label_flag_ac.ForeColor = System.Drawing.SystemColors.ControlText;
             this.label_flag_ac.Location = new System.Drawing.Point(18, 97);
             this.label_flag_ac.Name = "label_flag_ac";
@@ -1209,6 +1143,7 @@
             // label_reg_af
             // 
             this.label_reg_af.AutoSize = true;
+            this.label_reg_af.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F);
             this.label_reg_af.ForeColor = System.Drawing.SystemColors.ControlText;
             this.label_reg_af.Location = new System.Drawing.Point(3, 18);
             this.label_reg_af.Name = "label_reg_af";
@@ -1219,6 +1154,7 @@
             // label_reg_bc
             // 
             this.label_reg_bc.AutoSize = true;
+            this.label_reg_bc.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F);
             this.label_reg_bc.ForeColor = System.Drawing.SystemColors.ControlText;
             this.label_reg_bc.Location = new System.Drawing.Point(3, 37);
             this.label_reg_bc.Name = "label_reg_bc";
@@ -1229,6 +1165,7 @@
             // label_reg_de
             // 
             this.label_reg_de.AutoSize = true;
+            this.label_reg_de.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F);
             this.label_reg_de.ForeColor = System.Drawing.SystemColors.ControlText;
             this.label_reg_de.Location = new System.Drawing.Point(3, 56);
             this.label_reg_de.Name = "label_reg_de";
@@ -1239,6 +1176,7 @@
             // label_reg_hl
             // 
             this.label_reg_hl.AutoSize = true;
+            this.label_reg_hl.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F);
             this.label_reg_hl.ForeColor = System.Drawing.SystemColors.ControlText;
             this.label_reg_hl.Location = new System.Drawing.Point(3, 75);
             this.label_reg_hl.Name = "label_reg_hl";
@@ -1249,6 +1187,7 @@
             // label_reg_sp
             // 
             this.label_reg_sp.AutoSize = true;
+            this.label_reg_sp.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F);
             this.label_reg_sp.ForeColor = System.Drawing.SystemColors.ControlText;
             this.label_reg_sp.Location = new System.Drawing.Point(2, 94);
             this.label_reg_sp.Name = "label_reg_sp";
@@ -1259,6 +1198,7 @@
             // label_reg_pc
             // 
             this.label_reg_pc.AutoSize = true;
+            this.label_reg_pc.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F);
             this.label_reg_pc.ForeColor = System.Drawing.SystemColors.ControlText;
             this.label_reg_pc.Location = new System.Drawing.Point(3, 113);
             this.label_reg_pc.Name = "label_reg_pc";
@@ -1272,7 +1212,7 @@
             this.fileToolStripMenuItem});
             this.menu.Location = new System.Drawing.Point(0, 0);
             this.menu.Name = "menu";
-            this.menu.Size = new System.Drawing.Size(1177, 24);
+            this.menu.Size = new System.Drawing.Size(1259, 24);
             this.menu.TabIndex = 0;
             this.menu.Text = "menuStrip1";
             // 
@@ -1290,7 +1230,7 @@
             this.toolStripButton3});
             this.tools.Location = new System.Drawing.Point(0, 24);
             this.tools.Name = "tools";
-            this.tools.Size = new System.Drawing.Size(1177, 25);
+            this.tools.Size = new System.Drawing.Size(1259, 25);
             this.tools.TabIndex = 0;
             this.tools.Text = "toolStrip1";
             // 
@@ -1324,26 +1264,25 @@
             this.toolStripButton3.Text = "toolStripButton3";
             this.toolStripButton3.Click += new System.EventHandler(this.toolStripButton3_Click);
             // 
-            // form_debugger
+            // FormDebugger
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1177, 761);
+            this.ClientSize = new System.Drawing.Size(1259, 761);
             this.Controls.Add(this.main_panel);
             this.Controls.Add(this.tools);
             this.Controls.Add(this.menu);
-            this.Name = "form_debugger";
+            this.Name = "FormDebugger";
             this.Text = "Debugger";
             this.main_panel.Panel1.ResumeLayout(false);
             this.main_panel.Panel2.ResumeLayout(false);
-            this.main_panel.Panel2.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.main_panel)).EndInit();
             this.main_panel.ResumeLayout(false);
             this.disasm_group.ResumeLayout(false);
             this.disasm_group.PerformLayout();
             this.panel2.ResumeLayout(false);
-            ((System.ComponentModel.ISupportInitialize)(this.img_arrow_pc)).EndInit();
             this.tableLayoutPanel1.ResumeLayout(false);
+            this.tableLayoutPanel1.PerformLayout();
             this.middle_panel.ResumeLayout(false);
             this.breakpoints_watch.ResumeLayout(false);
             this.splitContainer2.Panel1.ResumeLayout(false);
@@ -1449,13 +1388,7 @@
         private System.Windows.Forms.TextBox textbox_mapping_ram_page;
         private System.Windows.Forms.Label label15;
         private System.Windows.Forms.Panel middle_panel;
-        private System.Windows.Forms.TableLayoutPanel tableLayoutPanel1;
         private System.Windows.Forms.VScrollBar vScrollBar1;
-        private System.Windows.Forms.ListBox execution_stats_list;
-        private System.Windows.Forms.ListBox arg_labels_list;
-        private System.Windows.Forms.ListBox disasm_list;
-        private System.Windows.Forms.ListBox addr_list;
-        private System.Windows.Forms.ListBox breakpoints_list;
         private System.Windows.Forms.Panel panel2;
         private System.Windows.Forms.DataGridView watch_datagrid;
         private System.Windows.Forms.DataGridView bp_datagrid;
@@ -1465,7 +1398,6 @@
         private System.Windows.Forms.DataGridViewTextBoxColumn br_condition;
         private System.Windows.Forms.DataGridViewTextBoxColumn watch_column_name;
         private System.Windows.Forms.DataGridViewTextBoxColumn value_column_name;
-        private System.Windows.Forms.PictureBox img_arrow_pc;
         private System.Windows.Forms.ToolStripButton toolStripButton2;
         private System.Windows.Forms.ToolStripButton toolStripButton3;
         private System.Windows.Forms.Label label2;
@@ -1473,5 +1405,7 @@
         private System.Windows.Forms.Label label3;
         private System.Windows.Forms.TextBox textbox_hlta;
         private System.Windows.Forms.Label label5;
+        private System.Windows.Forms.ListBox listBox_disasm;
+        private System.Windows.Forms.TableLayoutPanel tableLayoutPanel1;
     }
 }

@@ -736,8 +736,8 @@ namespace devector
 			}
 			else if (machine_cycle == 1)
 			{
-				h = W;
-				l = Z;
+				hb = W;
+				lb = Z;
 			}
 		}
 

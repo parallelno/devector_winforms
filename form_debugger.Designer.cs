@@ -151,7 +151,7 @@
             // main_panel
             // 
             this.main_panel.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.main_panel.Location = new System.Drawing.Point(0, 49);
+            this.main_panel.Location = new System.Drawing.Point(0, 55);
             this.main_panel.Name = "main_panel";
             // 
             // main_panel.Panel1
@@ -164,7 +164,7 @@
             this.main_panel.Panel2.Controls.Add(this.middle_panel);
             this.main_panel.Panel2.Font = new System.Drawing.Font("Consolas", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.main_panel.Panel2.Paint += new System.Windows.Forms.PaintEventHandler(this.main_panel_Panel2_Paint);
-            this.main_panel.Size = new System.Drawing.Size(1259, 712);
+            this.main_panel.Size = new System.Drawing.Size(1259, 706);
             this.main_panel.SplitterDistance = 567;
             this.main_panel.TabIndex = 0;
             // 
@@ -176,7 +176,7 @@
             this.disasm_group.ForeColor = System.Drawing.SystemColors.ControlDarkDark;
             this.disasm_group.Location = new System.Drawing.Point(0, 0);
             this.disasm_group.Name = "disasm_group";
-            this.disasm_group.Size = new System.Drawing.Size(567, 712);
+            this.disasm_group.Size = new System.Drawing.Size(567, 706);
             this.disasm_group.TabIndex = 1;
             this.disasm_group.TabStop = false;
             this.disasm_group.Text = "Disasm";
@@ -188,7 +188,7 @@
             this.panel2.Dock = System.Windows.Forms.DockStyle.Fill;
             this.panel2.Location = new System.Drawing.Point(3, 36);
             this.panel2.Name = "panel2";
-            this.panel2.Size = new System.Drawing.Size(561, 673);
+            this.panel2.Size = new System.Drawing.Size(561, 667);
             this.panel2.TabIndex = 0;
             // 
             // vScrollBar1
@@ -196,7 +196,7 @@
             this.vScrollBar1.Dock = System.Windows.Forms.DockStyle.Right;
             this.vScrollBar1.Location = new System.Drawing.Point(542, 0);
             this.vScrollBar1.Name = "vScrollBar1";
-            this.vScrollBar1.Size = new System.Drawing.Size(19, 673);
+            this.vScrollBar1.Size = new System.Drawing.Size(19, 667);
             this.vScrollBar1.TabIndex = 0;
             // 
             // tableLayoutPanel1
@@ -211,7 +211,7 @@
             this.tableLayoutPanel1.RowCount = 2;
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
-            this.tableLayoutPanel1.Size = new System.Drawing.Size(561, 673);
+            this.tableLayoutPanel1.Size = new System.Drawing.Size(561, 667);
             this.tableLayoutPanel1.TabIndex = 3;
             // 
             // listBox_disasm
@@ -220,7 +220,7 @@
             this.listBox_disasm.FormattingEnabled = true;
             this.listBox_disasm.Location = new System.Drawing.Point(3, 3);
             this.listBox_disasm.Name = "listBox_disasm";
-            this.listBox_disasm.Size = new System.Drawing.Size(555, 647);
+            this.listBox_disasm.Size = new System.Drawing.Size(555, 641);
             this.listBox_disasm.TabIndex = 3;
             this.listBox_disasm.KeyDown += new System.Windows.Forms.KeyEventHandler(this.listBox_disasm_KeyDown);
             this.listBox_disasm.MouseDown += new System.Windows.Forms.MouseEventHandler(this.disasm_list_mouse_down);
@@ -228,7 +228,7 @@
             // label5
             // 
             this.label5.AutoSize = true;
-            this.label5.Location = new System.Drawing.Point(3, 653);
+            this.label5.Location = new System.Drawing.Point(3, 647);
             this.label5.Name = "label5";
             this.label5.Size = new System.Drawing.Size(35, 13);
             this.label5.TabIndex = 1;
@@ -250,7 +250,7 @@
             this.middle_panel.Dock = System.Windows.Forms.DockStyle.Left;
             this.middle_panel.Location = new System.Drawing.Point(0, 0);
             this.middle_panel.Name = "middle_panel";
-            this.middle_panel.Size = new System.Drawing.Size(405, 712);
+            this.middle_panel.Size = new System.Drawing.Size(405, 706);
             this.middle_panel.TabIndex = 0;
             // 
             // breakpoints_watch
@@ -259,7 +259,7 @@
             this.breakpoints_watch.Dock = System.Windows.Forms.DockStyle.Fill;
             this.breakpoints_watch.Location = new System.Drawing.Point(0, 181);
             this.breakpoints_watch.Name = "breakpoints_watch";
-            this.breakpoints_watch.Size = new System.Drawing.Size(405, 531);
+            this.breakpoints_watch.Size = new System.Drawing.Size(405, 525);
             this.breakpoints_watch.TabIndex = 0;
             this.breakpoints_watch.TabStop = false;
             // 
@@ -277,8 +277,8 @@
             // splitContainer2.Panel2
             // 
             this.splitContainer2.Panel2.Controls.Add(this.groupBox2);
-            this.splitContainer2.Size = new System.Drawing.Size(399, 506);
-            this.splitContainer2.SplitterDistance = 236;
+            this.splitContainer2.Size = new System.Drawing.Size(399, 500);
+            this.splitContainer2.SplitterDistance = 233;
             this.splitContainer2.TabIndex = 0;
             // 
             // groupBox1
@@ -288,7 +288,7 @@
             this.groupBox1.ForeColor = System.Drawing.SystemColors.ControlDarkDark;
             this.groupBox1.Location = new System.Drawing.Point(0, 0);
             this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Size = new System.Drawing.Size(399, 236);
+            this.groupBox1.Size = new System.Drawing.Size(399, 233);
             this.groupBox1.TabIndex = 0;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Breakpoints";
@@ -308,7 +308,7 @@
             this.bp_datagrid.GridColor = System.Drawing.SystemColors.ControlText;
             this.bp_datagrid.Location = new System.Drawing.Point(3, 22);
             this.bp_datagrid.Name = "bp_datagrid";
-            this.bp_datagrid.Size = new System.Drawing.Size(393, 211);
+            this.bp_datagrid.Size = new System.Drawing.Size(393, 208);
             this.bp_datagrid.TabIndex = 0;
             // 
             // br_active
@@ -352,7 +352,7 @@
             this.groupBox2.ForeColor = System.Drawing.SystemColors.ControlDarkDark;
             this.groupBox2.Location = new System.Drawing.Point(0, 0);
             this.groupBox2.Name = "groupBox2";
-            this.groupBox2.Size = new System.Drawing.Size(399, 266);
+            this.groupBox2.Size = new System.Drawing.Size(399, 263);
             this.groupBox2.TabIndex = 0;
             this.groupBox2.TabStop = false;
             this.groupBox2.Text = "Watch";
@@ -370,7 +370,7 @@
             this.watch_datagrid.GridColor = System.Drawing.SystemColors.ControlText;
             this.watch_datagrid.Location = new System.Drawing.Point(3, 22);
             this.watch_datagrid.Name = "watch_datagrid";
-            this.watch_datagrid.Size = new System.Drawing.Size(393, 241);
+            this.watch_datagrid.Size = new System.Drawing.Size(393, 238);
             this.watch_datagrid.TabIndex = 0;
             // 
             // watch_column_name
@@ -1208,6 +1208,7 @@
             // 
             // menu
             // 
+            this.menu.ImageScalingSize = new System.Drawing.Size(24, 24);
             this.menu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.fileToolStripMenuItem});
             this.menu.Location = new System.Drawing.Point(0, 0);
@@ -1224,13 +1225,14 @@
             // 
             // tools
             // 
+            this.tools.ImageScalingSize = new System.Drawing.Size(24, 24);
             this.tools.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.toolStripButton1,
             this.toolStripButton2,
             this.toolStripButton3});
             this.tools.Location = new System.Drawing.Point(0, 24);
             this.tools.Name = "tools";
-            this.tools.Size = new System.Drawing.Size(1259, 25);
+            this.tools.Size = new System.Drawing.Size(1259, 31);
             this.tools.TabIndex = 0;
             this.tools.Text = "toolStrip1";
             // 
@@ -1240,7 +1242,7 @@
             this.toolStripButton1.Image = ((System.Drawing.Image)(resources.GetObject("toolStripButton1.Image")));
             this.toolStripButton1.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.toolStripButton1.Name = "toolStripButton1";
-            this.toolStripButton1.Size = new System.Drawing.Size(23, 22);
+            this.toolStripButton1.Size = new System.Drawing.Size(28, 28);
             this.toolStripButton1.Text = "toolStripButton1";
             this.toolStripButton1.Click += new System.EventHandler(this.toolStripButton1_Click);
             // 
@@ -1250,7 +1252,7 @@
             this.toolStripButton2.Image = ((System.Drawing.Image)(resources.GetObject("toolStripButton2.Image")));
             this.toolStripButton2.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.toolStripButton2.Name = "toolStripButton2";
-            this.toolStripButton2.Size = new System.Drawing.Size(23, 22);
+            this.toolStripButton2.Size = new System.Drawing.Size(28, 28);
             this.toolStripButton2.Text = "toolStripButton2";
             this.toolStripButton2.Click += new System.EventHandler(this.toolStripButton2_Click);
             // 
@@ -1260,7 +1262,7 @@
             this.toolStripButton3.Image = ((System.Drawing.Image)(resources.GetObject("toolStripButton3.Image")));
             this.toolStripButton3.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.toolStripButton3.Name = "toolStripButton3";
-            this.toolStripButton3.Size = new System.Drawing.Size(23, 22);
+            this.toolStripButton3.Size = new System.Drawing.Size(28, 28);
             this.toolStripButton3.Text = "toolStripButton3";
             this.toolStripButton3.Click += new System.EventHandler(this.toolStripButton3_Click);
             // 

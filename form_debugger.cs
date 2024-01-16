@@ -473,7 +473,7 @@ namespace devector
 			cc_last = Hardware.cpu.cc;
 
 			Hardware.execute_instruction();
-			update_form();
+            update_form();
 		}
 
 		private void toolStripButton2_Click(object sender, EventArgs e)
